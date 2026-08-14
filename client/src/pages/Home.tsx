@@ -12,7 +12,10 @@ import {
   CircleAlert,
   Clock3,
   Copy,
+  Download,
+  Globe2,
   Github,
+  Hand,
   KeyRound,
   LockKeyhole,
   Monitor,
@@ -30,6 +33,7 @@ import {
   Smartphone,
   Sun,
   Terminal,
+  Timer,
   Wifi,
   X,
   Zap,
@@ -51,6 +55,11 @@ const featureData: Record<DemoMode, { kicker: string; title: string; detail: str
   screen: { kicker: "01 / EXTENDED DISPLAY", title: "A second surface, right where you are.", detail: "Select a window or screen area on the Desktop Hub and send a focused visual feed to the Pocket Hub. The local route keeps the signal close and the feedback immediate.", icon: Monitor, metrics: ["12 fps prototype", "JPEG over WebSocket", "WebRTC-ready path"] },
   trackpad: { kicker: "02 / TRACKPAD + INPUT", title: "Move the pointer without moving your chair.", detail: "Touch gestures become compact binary deltas, clicks, scroll, and optional keyboard text. It is a small control protocol with a very human result.", icon: MousePointer2, metrics: ["Binary input frames", "Tap / scroll / type", "Reconnect-aware"] },
   clock: { kicker: "03 / AMBIENT CLOCK", title: "When idle, the phone still earns its keep.", detail: "A quiet dark display turns the Pocket Hub into a desk-side clock. Switch back to control or screen mode without pairing again.", icon: Clock3, metrics: ["Dark ambient UI", "Mode switch in-session", "No cloud dependency"] },
+};
+
+const localeCopy = {
+  en: { demo: "Demo", features: "Features", connect: "Connect", tutorial: "Tutorial", architecture: "Architecture", docs: "Docs", explore: "Explore the demo", guide: "Read the field guide", hero: "Halo Deck turns a phone into a trusted control surface and second display for a computer—pair once, stay local, keep the signal in the room.", download: "Download Halo Deck", desktop: "Desktop installer", mobile: "Mobile app", releases: "View releases", tryIt: "Try it live", light: "LIGHT", dark: "DARK" },
+  id: { demo: "Demo", features: "Fitur", connect: "Koneksi", tutorial: "Tutorial", architecture: "Arsitektur", docs: "Dokumentasi", explore: "Jalankan demo", guide: "Baca panduan", hero: "Halo Deck mengubah HP menjadi kendali dan layar kedua yang tepercaya untuk komputer—pair sekali, tetap lokal, dan jaga sinyal di ruangan.", download: "Unduh Halo Deck", desktop: "Installer desktop", mobile: "Aplikasi mobile", releases: "Lihat release", tryIt: "Coba langsung", light: "TERANG", dark: "GELAP" },
 };
 
 function ProtocolTag({ children, tone = "blue" }: { children: React.ReactNode; tone?: "blue" | "apricot" | "ink" }) {
@@ -84,6 +93,10 @@ function DeviceSpecimen() {
       <div className="specimen-note specimen-note-bottom"><span>02</span> trusted session</div>
     </div>
   );
+}
+
+function DownloadSection({ copy }: { copy: typeof localeCopy.en }) {
+  return <section id="downloads" className="download-strip"><div className="download-inner"><div className="download-copy"><ProtocolTag tone="apricot">GET THE COMPANION</ProtocolTag><h2>{copy.download}</h2><p>Desktop Hub keeps the local server open. Pocket Hub brings the controls with you. Release files will live in GitHub Releases.</p></div><div className="download-actions"><a className="download-card" href="https://github.com/jafit1/Halo-Deck/releases" target="_blank" rel="noreferrer"><span className="download-icon"><Monitor size={18} /></span><span><strong>{copy.desktop}</strong><small>Windows / macOS / Linux</small></span><Download size={16} /></a><a className="download-card" href="https://github.com/jafit1/Halo-Deck/releases" target="_blank" rel="noreferrer"><span className="download-icon mobile"><Smartphone size={18} /></span><span><strong>{copy.mobile}</strong><small>Android / iOS via releases</small></span><Download size={16} /></a><a className="release-link" href="https://github.com/jafit1/Halo-Deck/releases" target="_blank" rel="noreferrer">{copy.releases} <ArrowUpRight size={14} /></a></div></div></section>;
 }
 
 function LiveDemo() {
@@ -138,6 +151,24 @@ function FeaturesSection() {
   return <section id="features" className="section section-features"><div className="section-inner"><SectionMarker number="03" label="THE FEATURE SET" /><div className="features-heading"><div><h2>One session.<br /><em>Three jobs.</em></h2></div><p>Each mode is a different answer to the same local question: what would make the computer more useful right now?</p></div><div className="features-layout"><div className="feature-selector" role="tablist" aria-label="LAN Companion features">{(Object.keys(featureData) as DemoMode[]).map((item, index) => { const ItemIcon = featureData[item].icon; return <button key={item} className={active === item ? "feature-card active" : "feature-card"} onClick={() => setActive(item)} role="tab" aria-selected={active === item}><span className="feature-number">0{index + 1}</span><span className="feature-icon"><ItemIcon size={19} /></span><span className="feature-card-copy"><strong>{featureData[item].kicker.split(" / ")[1]}</strong><small>{item === "screen" ? "Visual surface" : item === "trackpad" ? "Control surface" : "Ambient surface"}</small></span><ArrowUpRight className="feature-card-arrow" size={17} /></button>; })}</div><div className="feature-stage"><div className="feature-stage-top"><ProtocolTag tone="apricot">{feature.kicker}</ProtocolTag><span className="feature-stage-live"><span /> ACTIVE FEATURE</span></div><div className="feature-stage-visual"><div className={`feature-orb feature-orb-${active}`}><Icon size={32} /></div><div className="feature-scan-line" /><span className="feature-coordinate">LOCAL / 0{(Object.keys(featureData) as DemoMode[]).indexOf(active) + 1} / READY</span>{active === "screen" && <div className="feature-window"><i /><i /><i /><b /><b /><b /></div>}{active === "trackpad" && <MousePointer2 className="feature-cursor" size={29} />}{active === "clock" && <div className="feature-time">09:41<small>AMBIENT</small></div>}</div><h3>{feature.title}</h3><p>{feature.detail}</p><div className="feature-metrics">{feature.metrics.map((metric) => <span key={metric}><Check size={13} /> {metric}</span>)}</div></div></div></div></section>;
 }
 
+function TrackpadSimulator() {
+  const [pointer, setPointer] = useState({ x: 50, y: 48 });
+  const [clicks, setClicks] = useState(0);
+  const [scrolls, setScrolls] = useState(0);
+  return <div className="mode-sim-card"><div className="mode-sim-head"><div><ProtocolTag tone="apricot">TRY / TRACKPAD</ProtocolTag><h3>Move it yourself.</h3></div><span className="sim-status"><span /> LIVE INPUT</span></div><div className="trackpad-surface" onPointerMove={(event) => { const rect = event.currentTarget.getBoundingClientRect(); setPointer({ x: ((event.clientX - rect.left) / rect.width) * 100, y: ((event.clientY - rect.top) / rect.height) * 100 }); }} onPointerDown={() => setClicks((value) => value + 1)} onWheel={(event) => { event.preventDefault(); setScrolls((value) => value + (event.deltaY > 0 ? 1 : -1)); }}><div className="trackpad-grid" /><MousePointer2 className="trackpad-cursor" style={{ left: `${pointer.x}%`, top: `${pointer.y}%` }} size={24} /><span className="trackpad-hint"><Hand size={14} /> Move, click, or scroll here</span><span className="trackpad-coordinates">Δ x {Math.round(pointer.x - 50)} · Δ y {Math.round(pointer.y - 50)}</span></div><div className="sim-metrics"><span><MousePointer2 size={13} /> pointer active</span><span><Check size={13} /> {clicks} clicks</span><span><ArrowDown size={13} /> {scrolls} scroll</span></div></div>;
+}
+
+function AmbientSimulator() {
+  const [now, setNow] = useState(() => new Date());
+  const [clockTheme, setClockTheme] = useState<"midnight" | "ember">("midnight");
+  useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, []);
+  return <div className="mode-sim-card"><div className="mode-sim-head"><div><ProtocolTag tone="apricot">TRY / AMBIENT CLOCK</ProtocolTag><h3>Let it breathe.</h3></div><button className="clock-theme-toggle" onClick={() => setClockTheme((value) => value === "midnight" ? "ember" : "midnight")} aria-label="Change clock theme"><Sun size={14} /> theme</button></div><div className={`ambient-surface ${clockTheme}`}><span className="ambient-label">POCKET HUB / AMBIENT</span><strong>{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</strong><span>{now.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" })}</span><i>{clockTheme === "midnight" ? "MIDNIGHT BLUE" : "EMBER ROOM"}</i></div><div className="sim-metrics"><span><Timer size={13} /> ticking live</span><span><Sun size={13} /> tap theme</span><span><Wifi size={13} /> session idle</span></div></div>;
+}
+
+function ModeSimulations() {
+  return <section id="try-modes" className="section section-simulators"><div className="section-inner"><SectionMarker number="04" label="TRY THE SURFACES" /><div className="sim-heading"><h2>Touch the idea.<br /><em>Feel the mode.</em></h2><p>These browser simulations make the two tactile states concrete: move the cursor on a trackpad surface, or let the clock keep time while the session is idle.</p></div><div className="sim-grid"><TrackpadSimulator /><AmbientSimulator /></div></div></section>;
+}
+
 function ConnectionPaths() {
   return <section id="connect" className="section section-connect"><div className="section-inner"><SectionMarker number="04" label="HOW TO CONNECT" /><div className="connect-heading"><h2>Two ways in.<br /><em>One trusted session.</em></h2><p>Choose the flow that fits the room. QR is the fast, visible handshake. mDNS is the quiet path for devices that already know how to find each other.</p></div><div className="connection-grid"><div className="connection-card connection-qr"><div className="connection-card-top"><span className="connection-badge"><QrCode size={15} /> FASTEST</span><span>01 / 04</span></div><h3>Scan the QR.</h3><p>Desktop Hub shows a one-time QR with the LAN endpoint, pairing ID, and PIN. The Pocket Hub scans it, verifies the desktop, and receives a fresh sealed token.</p><div className="connection-steps"><span><b>01</b> Show QR</span><ArrowRight size={14} /><span><b>02</b> Scan</span><ArrowRight size={14} /><span><b>03</b> Confirm</span></div><div className="mini-qr-grid">{Array.from({ length: 49 }).map((_, index) => <i key={index} className={(index * 13 + index * index) % 5 < 2 ? "filled" : ""} />)}</div></div><div className="connection-card connection-mdns"><div className="connection-card-top"><span className="connection-badge blue"><Network size={15} /> AUTO-DISCOVERY</span><span>02 / 04</span></div><h3>Find it nearby.</h3><p>Bonjour/mDNS advertises the Desktop Hub on the same network. The Pocket Hub can show nearby desktops first, then still asks for the explicit pairing confirmation.</p><div className="mdns-radar"><div className="radar-ring ring-one" /><div className="radar-ring ring-two" /><div className="radar-center"><Server size={16} /></div><span className="radar-node node-a"><Monitor size={12} /></span><span className="radar-node node-b"><Smartphone size={12} /></span></div><div className="mdns-foot"><Wifi size={13} /> Same WiFi / LAN <span>·</span> no cloud relay</div></div></div><div className="connect-note"><ShieldCheck size={17} /><span><strong>Either way, consent stays visible.</strong> Discovery finds the desktop; the QR or PIN gives the phone permission to stay.</span></div></div></section>;
 }
@@ -173,26 +204,33 @@ function CodeBlock({ title, code }: { title: string; code: string }) {
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false);
-  const [isDark, setIsDark] = useState(() => new URLSearchParams(window.location.search).get("theme") === "dark" || window.localStorage.getItem("halo-deck-theme") === "dark");
+  const [isDark, setIsDark] = useState(() => { const themeParam = new URLSearchParams(window.location.search).get("theme"); return themeParam ? themeParam === "dark" : window.localStorage.getItem("halo-deck-theme") === "dark"; });
+  const [language, setLanguage] = useState<"en" | "id">(() => new URLSearchParams(window.location.search).get("lang") === "id" ? "id" : (window.localStorage.getItem("halo-deck-language") as "en" | "id") || (navigator.language.toLowerCase().startsWith("id") ? "id" : "en"));
+  const copy = localeCopy[language];
   useEffect(() => { const onScroll = () => setScrolled(window.scrollY > 16); window.addEventListener("scroll", onScroll); return () => window.removeEventListener("scroll", onScroll); }, []);
   useEffect(() => { document.documentElement.dataset.haloTheme = isDark ? "dark" : "light"; window.localStorage.setItem("halo-deck-theme", isDark ? "dark" : "light"); }, [isDark]);
+  useEffect(() => { window.localStorage.setItem("halo-deck-language", language); document.documentElement.lang = language === "id" ? "id" : "en"; }, [language]);
 
   return <div className={isDark ? "site-shell dark-site" : "site-shell"}>
     <div className="signal-spine" aria-hidden="true"><span>01</span><i /><b /><i /><b /><i /><b /><i /><b /><span>06</span></div>
     <header className={scrolled ? "site-nav scrolled" : "site-nav"}>
       <a className="brand" href="#top"><ProductMark /><span><strong>HALO</strong> Deck</span></a>
-      <nav className="nav-links" aria-label="Primary"><a href="#demo">Demo</a><a href="#features">Features</a><a href="#connect">Connect</a><a href="#guide">Tutorial</a><a href="#architecture">Architecture</a><a href="#docs">Docs</a></nav>
-      <div className="nav-end"><span className="local-badge"><span /> LOCAL / NO CLOUD</span><button className="theme-toggle" onClick={() => setIsDark((value) => !value)} aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"} title={isDark ? "Switch to light mode" : "Switch to dark mode"}>{isDark ? <Sun size={15} /> : <Moon size={15} />}<span>{isDark ? "LIGHT" : "DARK"}</span></button><a className="nav-github" href="https://github.com/jafit1/Halo-Deck" target="_blank" rel="noreferrer" aria-label="Open Halo Deck on GitHub"><Github size={16} /></a></div>
+      <nav className="nav-links" aria-label="Primary"><a href="#demo">{copy.demo}</a><a href="#features">{copy.features}</a><a href="#try-modes">Try modes</a><a href="#connect">{copy.connect}</a><a href="#guide">{copy.tutorial}</a><a href="#architecture">{copy.architecture}</a><a href="#docs">{copy.docs}</a></nav>
+      <div className="nav-end"><span className="local-badge"><span /> LOCAL / NO CLOUD</span><button className="language-toggle" onClick={() => setLanguage((value) => value === "en" ? "id" : "en")} aria-label="Change language"><Globe2 size={14} /><span>{language === "en" ? "EN" : "ID"}</span></button><button className="theme-toggle" onClick={() => setIsDark((value) => !value)} aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"} title={isDark ? "Switch to light mode" : "Switch to dark mode"}>{isDark ? <Sun size={15} /> : <Moon size={15} />}<span>{isDark ? copy.light : copy.dark}</span></button><a className="nav-github" href="https://github.com/jafit1/Halo-Deck" target="_blank" rel="noreferrer" aria-label="Open Halo Deck on GitHub"><Github size={16} /></a></div>
     </header>
 
     <main id="top">
       <section className="hero-section">
-        <div className="hero-inner"><div className="hero-rail"><span>01</span><div /><span>LOCAL-FIRST</span></div><div className="hero-content"><div className="eyebrow-row"><ProtocolTag>DESKTOP + MOBILE</ProtocolTag><span className="eyebrow-line" /><span className="eyebrow-text">A companion system for nearby machines</span></div><h1>Your phone is already a screen.<em>Give it a job.</em></h1><p className="hero-lede">Halo Deck turns a phone into a trusted control surface and second display for a computer—pair once, stay local, keep the signal in the room.</p><div className="hero-actions"><a href="#demo" className="button button-ink">Explore the demo <ArrowDown size={16} /></a><a href="#docs" className="text-link">Read the field guide <ArrowUpRight size={15} /></a></div><div className="hero-meta"><div><span className="meta-number">01</span><span>WebSocket<br />on the LAN</span></div><div><span className="meta-number">02</span><span>QR pairing<br />per session</span></div><div><span className="meta-number">03</span><span>Three modes<br />one client</span></div></div></div><div className="hero-visual"><div className="hero-image-wrap"><img src={HERO_IMAGE} alt="Computer and phone connected by a local signal" /><div className="hero-image-caption"><span>FIG. 01 / THE LOCAL LOOP</span><span>NO INTERNET REQUIRED</span></div></div><DeviceSpecimen /></div></div>
+        <div className="hero-inner"><div className="hero-rail"><span>01</span><div /><span>LOCAL-FIRST</span></div><div className="hero-content"><div className="eyebrow-row"><ProtocolTag>DESKTOP + MOBILE</ProtocolTag><span className="eyebrow-line" /><span className="eyebrow-text">A companion system for nearby machines</span></div><h1>Your phone is already a screen.<em>Give it a job.</em></h1><p className="hero-lede">{copy.hero}</p><div className="hero-actions"><a href="#demo" className="button button-ink">{copy.explore} <ArrowDown size={16} /></a><a href="#docs" className="text-link">{copy.guide} <ArrowUpRight size={15} /></a></div><div className="hero-meta"><div><span className="meta-number">01</span><span>WebSocket<br />on the LAN</span></div><div><span className="meta-number">02</span><span>QR pairing<br />per session</span></div><div><span className="meta-number">03</span><span>Three modes<br />one client</span></div></div></div><div className="hero-visual"><div className="hero-image-wrap"><img src={HERO_IMAGE} alt="Computer and phone connected by a local signal" /><div className="hero-image-caption"><span>FIG. 01 / THE LOCAL LOOP</span><span>NO INTERNET REQUIRED</span></div></div><DeviceSpecimen /></div></div>
       </section>
+
+      <DownloadSection copy={copy} />
 
       <section id="demo" className="section section-demo"><div className="section-inner"><SectionMarker number="02" label="THE PRODUCT IN MOTION" /><div className="section-heading"><h2>Small system.<br /><em>Useful surface.</em></h2><p>Watch the essential idea unfold: the desktop opens a private local door, the phone proves it has the key, and the surface changes jobs without another pairing round.</p></div><LiveDemo /></div></section>
 
       <FeaturesSection />
+
+      <ModeSimulations />
 
       <ConnectionPaths />
 

@@ -15,3 +15,9 @@
 - [x] Add a site-wide Dark Mode toggle with persisted preference.
 - [x] Add a practical usage tutorial and troubleshooting guide.
 - [x] Test light/dark desktop and mobile states, then save a checkpoint.
+- [x] Add desktop and mobile download CTAs with clear availability states.
+- [x] Add interactive Trackpad simulation with pointer movement, click, and scroll feedback.
+- [x] Add interactive Ambient Clock simulation with live time and theme controls.
+- [x] Add English/Indonesian language toggle for primary site copy.
+- [x] Adjust laptop layout so desktop compositions remain fully visible without crop.
+- [x] Test laptop/mobile, language, and interactive mode states.
