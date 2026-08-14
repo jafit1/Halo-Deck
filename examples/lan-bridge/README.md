@@ -26,6 +26,7 @@ npm install
 npm run check
 npm start
 ```
+Desktop Hub memakai workspace modern dengan sidebar **Ringkasan**, **Perangkat**, **Pairing QR**, dan **Pengaturan**. Setelah HP terhubung, kartu device menampilkan platform, waktu koneksi, status live, tombol **Kirim layar**, dan tombol **Putuskan**. QR, PIN, endpoint LAN, jumlah perangkat, serta aktivitas sesi terlihat dalam satu layar.
 
 Desktop Hub membuka WebSocket pada port `47777`, mengiklankan `_halodeck._tcp.local`, membuat `pairId` dan PIN enam digit baru, lalu menampilkan QR berisi endpoint LAN, `pairId`, dan PIN. Pastikan Windows Firewall mengizinkan aplikasi pada jaringan **Private**. Di macOS, izinkan Screen Recording untuk aplikasi Electron ketika diminta.
 
@@ -40,17 +41,33 @@ Setelah perbaikan ini, QR pada laptop pengguna dengan WiFi `192.168.1.25` seharu
 
 Electron menggunakan `desktopCapturer.getSources()` sebagai bagian dari permission handler, lalu renderer meminta `navigator.mediaDevices.getDisplayMedia()`. Pola ini mengikuti dokumentasi resmi Electron untuk mengambil source window/screen melalui `getUserMedia()`/`getDisplayMedia()`.[1]
 
-## 2. Jalankan Pocket Hub Flutter
+## 2. Buat dan pasang Pocket Hub Android
 
-Di folder `examples/lan-bridge/mobile`, buat proyek Flutter kosong atau salin file `lib/` dan `pubspec.yaml` ini ke proyek Anda.
+Folder `mobile` sekarang berisi source Pocket Hub yang lebih sederhana: layar pairing satu langkah, penyimpanan device tepercaya, reconnect otomatis, Trackpad, dan Ambient Clock. Karena source reference tidak membawa folder Android hasil generator Flutter, gunakan script berikut dari PowerShell:
 
-```bash
-flutter pub get
-flutter analyze
-flutter run
+```powershell
+cd examples\lan-bridge\mobile
+Set-ExecutionPolicy -Scope Process Bypass
+.\create-android-project.ps1
 ```
 
-Pilih **Scan QR** untuk pairing tercepat. Mobile Scanner membaca JSON QR dan membuka WebSocket ke alamat `ws://LAN_IP:47777`. Jika memilih Desktop Hub dari mDNS, aplikasi meminta PIN secara manual. PIN tidak pernah diiklankan oleh mDNS.
+Script membuat project Android lengkap di `mobile\android_app`, menyalin source Pocket Hub, menjalankan `flutter pub get`, lalu menghasilkan:
+
+```text
+mobile\android_app\build\app\outputs\flutter-apk\app-debug.apk
+```
+
+Untuk memasang langsung ke HP yang tersambung USB dengan **USB debugging** aktif:
+
+```powershell
+cd android_app
+flutter install
+```
+
+Setelah aplikasi dibuka, tekan **Scan QR sekarang**. QR diproses otomatis tanpa mengetik PIN. Setelah pairing pertama berhasil, alamat, Pair ID, dan PIN tersimpan sehingga aplikasi dapat mencoba reconnect pada pembukaan berikutnya. Tombol **Cari Desktop Hub di jaringan** tersedia sebagai fallback mDNS.
+Pocket Hub Android memiliki empat permukaan: **Home** untuk status sesi, **Layar** untuk menerima stream WebRTC, **Trackpad** untuk swipe/tap/pinch/klik, dan **Jam** untuk Ambient Clock. Navigasi mode tetap berada pada sesi yang sama sehingga tidak perlu scan ulang ketika berganti fungsi.
+
+Jika tidak memiliki Flutter di komputer, jalankan workflow **Build Halo Deck Android APK** dari tab Actions repository GitHub. Workflow menghasilkan artifact `halo-deck-pocket-hub-debug` yang dapat diunduh dan dipasang ke Android.
 
 Untuk Android, deklarasikan permission berikut di `android/app/src/main/AndroidManifest.xml`.
 

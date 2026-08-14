@@ -6,12 +6,12 @@
   "main": "main.mjs",
   "scripts": {
     "start": "electron .",
-    "check": "node --check main.mjs && node --check server.mjs && node --check protocol.mjs",
+    "check": "node --check main.mjs && node --check server.mjs && node --check protocol.mjs && node --check renderer/renderer.mjs",
     "test:network": "node network-test.mjs"
   },
   "dependencies": {
     "bonjour-service": "^1.4.4",
-    "electron": "^40.0.0",
+    "electron": "^40.10.6",
     "qrcode": "^1.5.4",
     "ws": "^8.18.0"
   },

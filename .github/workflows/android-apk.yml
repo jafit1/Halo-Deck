@@ -1,0 +1,35 @@
+name: Build Halo Deck Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'examples/lan-bridge/mobile/**'
+      - '.github/workflows/android-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.35.0'
+      - name: Create Android project
+        run: |
+          flutter create --platforms=android --org com.halodeck --project-name halo_deck_mobile build/mobile
+          rm -rf build/mobile/lib
+          cp -R examples/lan-bridge/mobile/lib build/mobile/lib
+          cp examples/lan-bridge/mobile/pubspec.yaml build/mobile/pubspec.yaml
+      - name: Build debug APK
+        working-directory: build/mobile
+        run: flutter pub get && flutter build apk --debug
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: halo-deck-pocket-hub-debug
+          path: build/mobile/build/app/outputs/flutter-apk/app-debug.apk

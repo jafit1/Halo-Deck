@@ -34,3 +34,8 @@
 - [x] Prefer the active WiFi IPv4 address over Tailscale and virtual adapters.
 - [x] Add deterministic LAN address selection tests for 192.168.1.25.
 - [x] Re-run pairing smoke tests and update the desktop run instructions.
+- [x] Define the simplified first-run flow from Desktop Hub launch to Android connected state.
+- [x] Build a modern Desktop Hub device-management screen with connected-device cards and controls.
+- [x] Add Android-first pairing flow with QR scan, automatic LAN discovery, and saved trusted device.
+- [x] Create a complete Android project scaffold and APK build/release workflow.
+- [x] Test device status, disconnect/reconnect, mode switching, and desktop UI states.

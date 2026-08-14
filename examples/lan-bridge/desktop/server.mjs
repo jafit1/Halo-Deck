@@ -4,7 +4,7 @@ import { WebSocketServer } from 'ws';
 import { Bonjour } from 'bonjour-service';
 import { decodeInput, PORT, PROTOCOL_VERSION, SERVICE_TYPE } from './protocol.mjs';
 
-export function startLanServer({ port = PORT, onInput = () => {}, onPeer = () => {} } = {}) {
+export function startLanServer({ port = PORT, onInput = () => {}, onPeer = () => {}, onSignal = () => {} } = {}) {
   const pairing = createPairing();
   const lanAddress = getLanAddress();
   const wss = new WebSocketServer({ host: '0.0.0.0', port });
@@ -13,8 +13,8 @@ export function startLanServer({ port = PORT, onInput = () => {}, onPeer = () =>
   const service = bonjour.publish({ name: `Halo Deck · ${os.hostname()}`, type: SERVICE_TYPE, port, txt: { v: String(PROTOCOL_VERSION), pair: pairing.id } });
 
   wss.on('connection', (socket) => {
-    const peer = { socket, authenticated: false, role: null };
-    peers.add(peer); onPeer({ connected: true, count: peers.size });
+    const peer = { socket, authenticated: false, role: null, deviceId: crypto.randomBytes(6).toString('hex'), deviceName: 'Perangkat baru', platform: 'Mobile', connectedAt: Date.now() };
+    peers.add(peer); notifyPeers();
     socket.send(JSON.stringify({ type: 'pair.challenge', pairId: pairing.id, pinHint: 'Scan the QR or enter the one-time PIN' }));
 
     socket.on('message', (raw, isBinary) => {
@@ -27,23 +27,30 @@ export function startLanServer({ port = PORT, onInput = () => {}, onPeer = () =>
       let message; try { message = JSON.parse(raw.toString()); } catch { return; }
       if (message.type === 'pair.confirm') return authenticatePeer(peer, message, pairing);
       if (!peer.authenticated) return socket.close(1008, 'pairing required');
-      if (message.type === 'webrtc.request' || message.type === 'webrtc.offer' || message.type === 'webrtc.answer' || message.type === 'webrtc.ice' || message.type === 'mode') relayToOther(peer, message);
+      if (message.type === 'webrtc.request' || message.type === 'webrtc.offer' || message.type === 'webrtc.answer' || message.type === 'webrtc.ice' || message.type === 'mode') onSignal({ device: publicPeer(peer), message });
       if (message.type === 'ping') socket.send(JSON.stringify({ type: 'pong', t: message.t }));
     });
-    socket.on('close', () => { peers.delete(peer); onPeer({ connected: false, count: peers.size }); });
+    socket.on('close', () => { peers.delete(peer); notifyPeers(); });
   });
 
   const close = () => { service.stop(); bonjour.destroy(); wss.close(); for (const peer of peers) peer.socket.close(); };
-  return { wss, pairing, close, address: `ws://${lanAddress}:${port}` };
+  const getDevices = () => [...peers].filter((peer) => peer.authenticated).map(publicPeer);
+  const disconnectDevice = (deviceId) => { const peer = [...peers].find((candidate) => candidate.deviceId === deviceId); if (!peer) return false; peer.socket.close(1000, 'Disconnected by Desktop Hub'); return true; };
+  const relayFromDesktop = (message) => { for (const peer of peers) if (peer.authenticated && peer.socket.readyState === 1 && (!message.targetDeviceId || message.targetDeviceId === peer.deviceId)) peer.socket.send(JSON.stringify(message)); };
+  return { wss, pairing, close, getDevices, disconnectDevice, relayFromDesktop, address: `ws://${lanAddress}:${port}` };
 
   function authenticatePeer(peer, message, currentPairing) {
     if (message.pairId !== currentPairing.id || !safeEqual(message.pin, currentPairing.pin)) return peer.socket.close(1008, 'invalid pairing');
-    peer.authenticated = true; peer.role = message.role || 'mobile';
+    peer.authenticated = true; peer.role = message.role || 'mobile'; peer.deviceName = cleanLabel(message.deviceName, 'Pocket Hub'); peer.platform = cleanLabel(message.platform, 'Android');
     const sessionToken = crypto.randomBytes(32).toString('base64url');
     peer.socket.send(JSON.stringify({ type: 'pair.accepted', token: sealToken(sessionToken, currentPairing.pin, currentPairing.id), protocol: PROTOCOL_VERSION, server: lanAddress, port }));
+    notifyPeers();
   }
-  function relayToOther(sender, message) { for (const peer of peers) if (peer !== sender && peer.authenticated && peer.socket.readyState === 1) peer.socket.send(JSON.stringify(message)); }
+  function notifyPeers() { onPeer({ connected: [...peers].some((peer) => peer.authenticated), count: getDevices().length, devices: getDevices() }); }
 }
+
+function publicPeer(peer) { return { id: peer.deviceId, name: peer.deviceName, platform: peer.platform, connectedAt: peer.connectedAt, status: peer.authenticated ? 'connected' : 'pairing' }; }
+function cleanLabel(value, fallback) { return typeof value === 'string' && value.trim().length > 0 ? value.trim().slice(0, 48) : fallback; }
 
 function createPairing() { return { id: crypto.randomBytes(8).toString('hex'), pin: String(crypto.randomInt(100000, 1000000)) }; }
 function safeEqual(a, b) { if (typeof a !== 'string' || typeof b !== 'string') return false; const left = Buffer.from(a); const right = Buffer.from(b); return left.length === right.length && crypto.timingSafeEqual(left, right); }
