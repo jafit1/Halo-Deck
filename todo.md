@@ -31,3 +31,6 @@
 - [x] Add complete Flutter discovery, pairing, reconnect, and input client code.
 - [x] Document WebRTC signaling, LAN ICE, capture, and low-latency tuning.
 - [x] Run syntax/static checks and prepare the implementation guide.
+- [x] Prefer the active WiFi IPv4 address over Tailscale and virtual adapters.
+- [x] Add deterministic LAN address selection tests for 192.168.1.25.
+- [x] Re-run pairing smoke tests and update the desktop run instructions.

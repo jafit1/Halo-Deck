@@ -29,6 +29,15 @@ npm start
 
 Desktop Hub membuka WebSocket pada port `47777`, mengiklankan `_halodeck._tcp.local`, membuat `pairId` dan PIN enam digit baru, lalu menampilkan QR berisi endpoint LAN, `pairId`, dan PIN. Pastikan Windows Firewall mengizinkan aplikasi pada jaringan **Private**. Di macOS, izinkan Screen Recording untuk aplikasi Electron ketika diminta.
 
+Desktop Hub memprioritaskan alamat WiFi/Ethernet private seperti `192.168.x.x`, `10.x.x.x`, atau `172.16–31.x.x`. Alamat Tailscale `100.x.x.x` dan interface virtual lain tidak dipilih jika ada alamat WiFi LAN. Jika laptop memiliki konfigurasi jaringan khusus, Anda dapat menetapkan alamat secara eksplisit di PowerShell sebelum menjalankan aplikasi:
+
+```powershell
+$env:HALO_DECK_LAN_HOST="192.168.1.25"
+npm start
+```
+
+Setelah perbaikan ini, QR pada laptop pengguna dengan WiFi `192.168.1.25` seharusnya menampilkan `ws://192.168.1.25:47777`, bukan alamat Tailscale `100.111.64.66`.
+
 Electron menggunakan `desktopCapturer.getSources()` sebagai bagian dari permission handler, lalu renderer meminta `navigator.mediaDevices.getDisplayMedia()`. Pola ini mengikuti dokumentasi resmi Electron untuk mengambil source window/screen melalui `getUserMedia()`/`getDisplayMedia()`.[1]
 
 ## 2. Jalankan Pocket Hub Flutter

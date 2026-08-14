@@ -6,7 +6,8 @@
   "main": "main.mjs",
   "scripts": {
     "start": "electron .",
-    "check": "node --check main.mjs && node --check server.mjs && node --check protocol.mjs"
+    "check": "node --check main.mjs && node --check server.mjs && node --check protocol.mjs",
+    "test:network": "node network-test.mjs"
   },
   "dependencies": {
     "bonjour-service": "^1.4.4",
