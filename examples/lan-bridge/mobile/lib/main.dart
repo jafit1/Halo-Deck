@@ -151,7 +151,27 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
     );
   }
 
-  Widget _displayView() => Container(color: Colors.black, child: receiver == null ? const Center(child: CircularProgressIndicator(color: apricot)) : Stack(children: [Center(child: RTCVideoView(receiver!.renderer, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain)), Positioned(top: 18, left: 18, child: DecoratedBox(decoration: BoxDecoration(color: Colors.black.withOpacity(.65), borderRadius: BorderRadius.circular(20)), child: const Padding(padding: EdgeInsets.symmetric(horizontal: 13, vertical: 8), child: Text('LAYAR TAMBAHAN · LAN', style: TextStyle(color: blue, fontSize: 10, letterSpacing: 1.1))))]));
+  Widget _displayView() {
+    return Container(
+      color: Colors.black,
+      child: receiver == null
+          ? const Center(child: CircularProgressIndicator(color: apricot))
+          : Stack(children: [
+              Center(child: RTCVideoView(receiver!.renderer, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain)),
+              Positioned(
+                top: 18,
+                left: 18,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: Colors.black.withOpacity(.65), borderRadius: BorderRadius.circular(20)),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                    child: Text('LAYAR TAMBAHAN · LAN', style: TextStyle(color: blue, fontSize: 10, letterSpacing: 1.1)),
+                  ),
+                ),
+              ),
+            ]),
+    );
+  }
 
   Widget _trackpadView() {
     return Padding(
