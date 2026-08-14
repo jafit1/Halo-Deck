@@ -11,3 +11,7 @@
 - [x] Align repository references and project documentation with Halo Deck.
 - [x] Run typecheck, production build, and preview verification.
 - [ ] Save a new Halo Deck checkpoint for delivery.
+- [x] Add a smooth QR verification-to-connected transition.
+- [x] Add a site-wide Dark Mode toggle with persisted preference.
+- [x] Add a practical usage tutorial and troubleshooting guide.
+- [x] Test light/dark desktop and mobile states, then save a checkpoint.

@@ -20,6 +20,18 @@ pnpm check
 pnpm build
 ```
 
+## Tutorial penggunaan
+
+Buka website Halo Deck lalu gulir ke bagian **Demo** untuk melihat alur pairing simulasi. Tekan **Run pairing demo** dan amati urutan `QR scanned`, `Token sealed`, hingga `Ready on LAN`. Gunakan tab Extended Display, Trackpad, dan Ambient Clock untuk melihat bagaimana satu sesi dapat berpindah mode tanpa pairing ulang.
+
+Untuk mencoba aplikasi companion yang sebenarnya, jalankan Desktop Hub terlebih dahulu. Pastikan QR pairing dan kode satu kali terlihat pada komputer. Sambungkan komputer dan HP ke WiFi atau LAN yang sama; koneksi internet tidak diperlukan.
+
+Pada HP, buka Pocket Hub dan berikan izin kamera. Pilih **Scan QR**, arahkan kamera ke QR Desktop Hub, lalu tunggu proses verifikasi. Pairing yang berhasil akan melewati empat keadaan: QR terbaca, PIN diverifikasi, token sesi disegel, dan status berubah menjadi **Connected**. Setelah itu pilih mode **Extended Display**, **Trackpad**, atau **Ambient Clock** dari navigasi mobile.
+
+Jika aplikasi mobile mendukung auto-discovery, gunakan daftar Desktop Hub yang muncul melalui Bonjour/mDNS. Discovery hanya menemukan komputer di jaringan lokal; konfirmasi QR atau PIN tetap diperlukan agar perangkat yang kebetulan berada di WiFi yang sama tidak otomatis mendapat akses.
+
+Jika status tidak berubah menjadi connected, periksa tiga hal: kedua perangkat berada pada jaringan yang sama, firewall desktop mengizinkan koneksi pada jaringan **Private**, dan QR yang dipindai masih berasal dari proses Desktop Hub yang sedang berjalan. Tutup dan buka ulang Desktop Hub untuk membuat pairing ID, PIN, dan token baru, kemudian scan ulang.
+
 ## Repository
 
 The source is maintained at [github.com/jafit1/Halo-Deck](https://github.com/jafit1/Halo-Deck).

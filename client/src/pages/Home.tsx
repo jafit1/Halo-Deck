@@ -9,6 +9,7 @@ import {
   Check,
   ChevronDown,
   CircleDot,
+  CircleAlert,
   Clock3,
   Copy,
   Github,
@@ -16,8 +17,10 @@ import {
   LockKeyhole,
   Monitor,
   MousePointer2,
+  Moon,
   Network,
   Play,
+  Power,
   Radio,
   QrCode,
   RotateCw,
@@ -25,6 +28,7 @@ import {
   ShieldCheck,
   Server,
   Smartphone,
+  Sun,
   Terminal,
   Wifi,
   X,
@@ -138,6 +142,17 @@ function ConnectionPaths() {
   return <section id="connect" className="section section-connect"><div className="section-inner"><SectionMarker number="04" label="HOW TO CONNECT" /><div className="connect-heading"><h2>Two ways in.<br /><em>One trusted session.</em></h2><p>Choose the flow that fits the room. QR is the fast, visible handshake. mDNS is the quiet path for devices that already know how to find each other.</p></div><div className="connection-grid"><div className="connection-card connection-qr"><div className="connection-card-top"><span className="connection-badge"><QrCode size={15} /> FASTEST</span><span>01 / 04</span></div><h3>Scan the QR.</h3><p>Desktop Hub shows a one-time QR with the LAN endpoint, pairing ID, and PIN. The Pocket Hub scans it, verifies the desktop, and receives a fresh sealed token.</p><div className="connection-steps"><span><b>01</b> Show QR</span><ArrowRight size={14} /><span><b>02</b> Scan</span><ArrowRight size={14} /><span><b>03</b> Confirm</span></div><div className="mini-qr-grid">{Array.from({ length: 49 }).map((_, index) => <i key={index} className={(index * 13 + index * index) % 5 < 2 ? "filled" : ""} />)}</div></div><div className="connection-card connection-mdns"><div className="connection-card-top"><span className="connection-badge blue"><Network size={15} /> AUTO-DISCOVERY</span><span>02 / 04</span></div><h3>Find it nearby.</h3><p>Bonjour/mDNS advertises the Desktop Hub on the same network. The Pocket Hub can show nearby desktops first, then still asks for the explicit pairing confirmation.</p><div className="mdns-radar"><div className="radar-ring ring-one" /><div className="radar-ring ring-two" /><div className="radar-center"><Server size={16} /></div><span className="radar-node node-a"><Monitor size={12} /></span><span className="radar-node node-b"><Smartphone size={12} /></span></div><div className="mdns-foot"><Wifi size={13} /> Same WiFi / LAN <span>·</span> no cloud relay</div></div></div><div className="connect-note"><ShieldCheck size={17} /><span><strong>Either way, consent stays visible.</strong> Discovery finds the desktop; the QR or PIN gives the phone permission to stay.</span></div></div></section>;
 }
 
+function UsageTutorial() {
+  const steps = [
+    { icon: Power, number: "01", title: "Start the Desktop Hub", text: "Launch Halo Deck on the computer. Keep the Desktop Hub window open so its QR and one-time pairing code remain visible." },
+    { icon: Wifi, number: "02", title: "Join the same network", text: "Connect the computer and phone to the same WiFi or LAN. Internet access is not required for the local session." },
+    { icon: QrCode, number: "03", title: "Scan or discover", text: "Scan the desktop QR for the fastest path, or use the nearby Desktop Hub found through Bonjour/mDNS." },
+    { icon: ShieldCheck, number: "04", title: "Wait for connected", text: "The demo shows QR scanned, PIN verified, session token sealed, then connected. In the real app, accept only the desktop you recognize." },
+    { icon: Monitor, number: "05", title: "Choose a mode", text: "Open Extended Display, Trackpad, or Ambient Clock. Switching modes keeps the same trusted session." },
+  ];
+  return <section id="guide" className="section section-guide"><div className="section-inner"><SectionMarker number="05" label="USE IT IN FIVE MOVES" /><div className="guide-heading"><h2>From QR to<br /><em>ready.</em></h2><p>Follow this path when trying the prototype. If the connected state appears, the local pairing loop is working.</p></div><div className="guide-grid"><div className="guide-steps">{steps.map(({ icon: StepIcon, number, title, text }, index) => <div className="guide-step" key={number}><div className="guide-step-index"><span>{number}</span>{index < steps.length - 1 && <i />}</div><div className="guide-step-icon"><StepIcon size={17} /></div><div><h3>{title}</h3><p>{text}</p></div></div>)}</div><div className="guide-result"><div className="guide-result-top"><span className="live-dot" /> SUCCESS CHECK</div><div className="guide-result-screen"><div className="guide-result-check"><Check size={23} /></div><strong>Connected on LAN</strong><span>Halo Deck / trusted session</span><div className="guide-result-pills"><b>12 ms</b><b>NO CLOUD</b><b>READY</b></div></div><div className="guide-warning"><CircleAlert size={15} /><span>If it does not connect, verify the same WiFi, allow the desktop app through the private-network firewall, then rescan the fresh QR.</span></div></div></div></div></section>;
+}
+
 function ArchitectureDiagram() {
   return <div className="architecture-diagram"><div className="arch-node arch-desktop"><div className="arch-icon"><Monitor size={19} /></div><div><ProtocolTag>DESKTOP HUB</ProtocolTag><h4>Local server</h4><p>Electron · WebSocket · Bonjour</p></div><span className="node-port">:47777</span></div><div className="arch-connector"><div className="connector-line" /><span>same WiFi / LAN</span><div className="connector-arrow"><ArrowDown size={14} /></div></div><div className="arch-node arch-mobile"><div className="arch-icon"><Smartphone size={19} /></div><div><ProtocolTag tone="apricot">POCKET HUB</ProtocolTag><h4>Trusted client</h4><p>Expo · QR pairing · touch input</p></div><span className="node-port">3 modes</span></div><div className="arch-footnote"><Wifi size={14} /> No cloud relay. No account. No round trip.</div></div>;
 }
@@ -158,14 +173,16 @@ function CodeBlock({ title, code }: { title: string; code: string }) {
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false);
+  const [isDark, setIsDark] = useState(() => new URLSearchParams(window.location.search).get("theme") === "dark" || window.localStorage.getItem("halo-deck-theme") === "dark");
   useEffect(() => { const onScroll = () => setScrolled(window.scrollY > 16); window.addEventListener("scroll", onScroll); return () => window.removeEventListener("scroll", onScroll); }, []);
+  useEffect(() => { document.documentElement.dataset.haloTheme = isDark ? "dark" : "light"; window.localStorage.setItem("halo-deck-theme", isDark ? "dark" : "light"); }, [isDark]);
 
-  return <div className="site-shell">
+  return <div className={isDark ? "site-shell dark-site" : "site-shell"}>
     <div className="signal-spine" aria-hidden="true"><span>01</span><i /><b /><i /><b /><i /><b /><i /><b /><span>06</span></div>
     <header className={scrolled ? "site-nav scrolled" : "site-nav"}>
       <a className="brand" href="#top"><ProductMark /><span><strong>HALO</strong> Deck</span></a>
-      <nav className="nav-links" aria-label="Primary"><a href="#demo">Demo</a><a href="#features">Features</a><a href="#connect">Connect</a><a href="#architecture">Architecture</a><a href="#docs">Docs</a></nav>
-      <div className="nav-end"><span className="local-badge"><span /> LOCAL / NO CLOUD</span><a className="nav-github" href="https://github.com" target="_blank" rel="noreferrer" aria-label="Open GitHub"><Github size={16} /></a></div>
+      <nav className="nav-links" aria-label="Primary"><a href="#demo">Demo</a><a href="#features">Features</a><a href="#connect">Connect</a><a href="#guide">Tutorial</a><a href="#architecture">Architecture</a><a href="#docs">Docs</a></nav>
+      <div className="nav-end"><span className="local-badge"><span /> LOCAL / NO CLOUD</span><button className="theme-toggle" onClick={() => setIsDark((value) => !value)} aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"} title={isDark ? "Switch to light mode" : "Switch to dark mode"}>{isDark ? <Sun size={15} /> : <Moon size={15} />}<span>{isDark ? "LIGHT" : "DARK"}</span></button><a className="nav-github" href="https://github.com/jafit1/Halo-Deck" target="_blank" rel="noreferrer" aria-label="Open Halo Deck on GitHub"><Github size={16} /></a></div>
     </header>
 
     <main id="top">
@@ -178,6 +195,8 @@ export default function Home() {
       <FeaturesSection />
 
       <ConnectionPaths />
+
+      <UsageTutorial />
 
       <section id="architecture" className="section section-architecture"><div className="section-inner"><SectionMarker number="05" label="SYSTEM MAP" /><div className="architecture-layout"><div><div className="section-heading compact"><h2>The internet<br /><em>stays out.</em></h2><p>Two apps, one nearby network, one deliberately small protocol. The architecture is designed around the physical fact that your devices are already in the same room.</p></div><div className="fact-list"><div><Radio size={16} /><span><strong>Discovery</strong> Bonjour/mDNS advertises the desktop; QR remains the fast fallback.</span></div><div><Zap size={16} /><span><strong>Input</strong> Mouse deltas use binary packets instead of verbose JSON.</span></div><div><RotateCw size={16} /><span><strong>Recovery</strong> The mobile client retries the last trusted endpoint after a brief WiFi drop.</span></div></div></div><ArchitectureDiagram /></div></div></section>
 
