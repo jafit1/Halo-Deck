@@ -1,4 +1,4 @@
-# LAN Companion Showcase — Design Direction
+# Halo Deck Showcase — Design Direction
 
 ## Three stylistic approaches
 
@@ -46,7 +46,7 @@ Use 180–260ms ease-out transitions for hover, tab, and state changes. On first
 Use **Space Grotesk** for headings and navigation: geometric, slightly technical, but warmer than a default UI sans. Use **IBM Plex Sans** for long-form explanations. Use **IBM Plex Mono** for protocol labels, code fragments, status readouts, and numeric telemetry. Headline scale: 64px desktop / 44px mobile. Body: 17px with generous line-height. Never use Inter.
 
 ### Brand Essence
-**LAN Companion is the local-first bridge that turns a phone into a trusted control surface and second screen for a computer, without asking the internet to participate.**
+**Halo Deck is the local-first bridge that turns a phone into a trusted control surface and second screen for a computer, without asking the internet to participate.**
 
 Personality adjectives: **grounded, curious, dependable**.
 
@@ -60,7 +60,7 @@ Example lines:
 > Pair once. Stay local. Move the pointer like it was always there.
 
 ### Wordmark & Logo
-The mark is a compact “split field” symbol: two offset rectangular planes connected by one blue signal notch. It works as a small app icon and expands into a wordmark with a deliberate gap between `LAN` and `Companion`, suggesting a local bridge.
+The mark is a compact “split field” symbol: two offset rectangular planes connected by one blue signal notch. It works as a small app icon and expands into a wordmark with a deliberate gap between `HALO` and `Deck`, suggesting a local bridge.
 
 ### Signature Brand Color
 **Signal Apricot — `#F39A63`**. It is warm enough to feel human, bright enough to behave like a live indicator, and distinctive against ink, paper, and blueprint blue.
