@@ -26,3 +26,8 @@
 - [x] Add mobile Trackpad swipe and pinch gesture feedback.
 - [x] Add step-by-step installation modal for desktop and mobile download CTAs.
 - [x] Test Indonesian copy, modal states, gesture feedback, and responsive layout.
+- [x] Define the shared LAN protocol and authenticated pairing flow.
+- [x] Add complete Electron WebSocket and mDNS reference server code.
+- [x] Add complete Flutter discovery, pairing, reconnect, and input client code.
+- [x] Document WebRTC signaling, LAN ICE, capture, and low-latency tuning.
+- [x] Run syntax/static checks and prepare the implementation guide.

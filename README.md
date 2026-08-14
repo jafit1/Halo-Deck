@@ -35,3 +35,7 @@ Jika status tidak berubah menjadi connected, periksa tiga hal: kedua perangkat b
 ## Repository
 
 The source is maintained at [github.com/jafit1/Halo-Deck](https://github.com/jafit1/Halo-Deck).
+
+## LAN bridge reference implementation
+
+The complete Electron + Flutter reference, including WebSocket pairing, Bonjour/mDNS discovery, binary input packets, WebRTC signaling, screen capture, and LAN tuning notes is in [`examples/lan-bridge/README.md`](examples/lan-bridge/README.md). The desktop example can be syntax-checked with `npm install && npm run check`; the Flutter example should be validated with `flutter pub get` and `flutter analyze` on a machine with the Flutter SDK installed.
