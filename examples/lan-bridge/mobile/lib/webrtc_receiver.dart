@@ -15,7 +15,7 @@ class LanScreenReceiver {
     _peer = await createPeerConnection({'iceServers': <Map<String, dynamic>>[], 'sdpSemantics': 'unified-plan', 'bundlePolicy': 'max-bundle'}, {});
     _peer!.onTrack = (event) { if (event.streams.isNotEmpty) renderer.srcObject = event.streams.first; };
     _peer!.onIceCandidate = (candidate) { if (candidate.candidate != null) connection.sendSignal({'type': 'webrtc.ice', 'candidate': candidate.toMap()}); };
-    _signals = connection.messages.listen(_handleSignal);
+    _signals = connection.messages.stream.listen(_handleSignal);
     connection.sendSignal({'type': 'webrtc.request'});
   }
 
