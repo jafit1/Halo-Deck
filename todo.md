@@ -9,5 +9,5 @@
 - [x] Inspect the Halo-Deck GitHub repository and current project state.
 - [x] Rename visible branding and metadata to Halo Deck.
 - [x] Align repository references and project documentation with Halo Deck.
-- [ ] Run typecheck, production build, and preview verification.
+- [x] Run typecheck, production build, and preview verification.
 - [ ] Save a new Halo Deck checkpoint for delivery.
