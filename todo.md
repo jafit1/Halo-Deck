@@ -39,7 +39,8 @@
 - [x] Add Android-first pairing flow with QR scan, automatic LAN discovery, and saved trusted device.
 - [x] Create a complete Android project scaffold and APK build/release workflow.
 - [x] Test device status, disconnect/reconnect, mode switching, and desktop UI states.
-- [ ] Add Electron Builder NSIS configuration and Windows installer workflow.
-- [ ] Add Android release signing workflow using GitHub Secrets and keystore decoding.
-- [ ] Add native desktop notification when a mobile device is authenticated.
-- [ ] Test packaging scripts, workflow definitions, pairing notification, and documentation.
+- [x] Add Electron Builder NSIS configuration and Windows installer workflow.
+- [x] Add Android release signing workflow using GitHub Secrets and keystore decoding.
+- [x] Add native desktop notification when a mobile device is authenticated.
+- [x] Test packaging scripts, workflow definitions, pairing notification, and documentation.
+- [ ] Add the four Android signing secrets in GitHub before running the signed release workflow.
