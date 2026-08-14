@@ -1,0 +1,55 @@
+name: Build Halo Deck Signed Android Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'android-v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.35.0'
+      - name: Create Android project
+        run: |
+          flutter create --platforms=android --org com.halodeck --project-name halo_deck_mobile build/mobile
+          rm -rf build/mobile/lib
+          cp -R examples/lan-bridge/mobile/lib build/mobile/lib
+          cp examples/lan-bridge/mobile/pubspec.yaml build/mobile/pubspec.yaml
+      - name: Configure release signing
+        working-directory: build/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64" || (echo "Missing ANDROID_KEYSTORE_BASE64 secret" && exit 1)
+          test -n "$ANDROID_KEY_ALIAS" || (echo "Missing ANDROID_KEY_ALIAS secret" && exit 1)
+          test -n "$ANDROID_KEY_PASSWORD" || (echo "Missing ANDROID_KEY_PASSWORD secret" && exit 1)
+          test -n "$ANDROID_STORE_PASSWORD" || (echo "Missing ANDROID_STORE_PASSWORD secret" && exit 1)
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/halo-deck-upload.jks
+          cat > android/key.properties <<EOF
+          storePassword=$ANDROID_STORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=halo-deck-upload.jks
+          EOF
+          python3 ../../scripts/configure_android_signing.py android/app/build.gradle.kts
+      - name: Build signed release APK
+        working-directory: build/mobile
+        run: flutter pub get && flutter build apk --release
+      - name: Upload signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: halo-deck-pocket-hub-release-signed
+          path: build/mobile/build/app/outputs/flutter-apk/app-release.apk

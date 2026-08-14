@@ -1,16 +1,16 @@
-import { app, BrowserWindow, desktopCapturer, ipcMain, session } from 'electron';
+import { app, BrowserWindow, desktopCapturer, ipcMain, Notification, session } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
 import { startLanServer } from './server.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-let mainWindow; let bridge; let bridgeInfo;
+let mainWindow; let bridge; let bridgeInfo; let previousDeviceIds = new Set();
 
 function sendToRenderer(channel, value) { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, value); }
 
 app.whenReady().then(async () => {
-  bridge = startLanServer({ onInput: await createInputInjector(), onPeer: (state) => sendToRenderer('devices-updated', state), onSignal: ({ device, message }) => sendToRenderer('webrtc-signal', { device, message }) });
+  bridge = startLanServer({ onInput: await createInputInjector(), onPeer: (state) => { sendToRenderer('devices-updated', state); for (const device of state.devices ?? []) if (!previousDeviceIds.has(device.id)) showDeviceNotification(device); previousDeviceIds = new Set((state.devices ?? []).map((device) => device.id)); }, onSignal: ({ device, message }) => sendToRenderer('webrtc-signal', { device, message }) });
   bridgeInfo = { address: bridge.address, pairId: bridge.pairing.id, pin: bridge.pairing.pin, qrDataUrl: await QRCode.toDataURL(JSON.stringify({ v: 1, address: bridge.address, pairId: bridge.pairing.id, pin: bridge.pairing.pin })) };
   session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
     const sources = await desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 0, height: 0 } });
@@ -25,6 +25,11 @@ ipcMain.handle('bridge-info', () => bridge ? { ...bridgeInfo, devices: bridge.ge
 ipcMain.handle('disconnect-device', (_event, deviceId) => bridge?.disconnectDevice(deviceId) ?? false);
 ipcMain.handle('relay-signal', (_event, message) => { bridge?.relayFromDesktop(message); return true; });
 app.on('before-quit', () => bridge?.close());
+
+function showDeviceNotification(device) {
+  if (!Notification.isSupported()) return;
+  new Notification({ title: 'Halo Deck · Device terhubung', body: `${device.name} (${device.platform}) berhasil masuk ke sesi LAN.`, silent: false }).show();
+}
 
 async function createInputInjector() {
   try {

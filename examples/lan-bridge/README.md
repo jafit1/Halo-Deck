@@ -183,6 +183,40 @@ Jalankan desktop dan mobile pada WiFi yang sama, bukan hotspot dengan client iso
 
 Jika tidak tersambung, periksa firewall, AP isolation, VPN yang mengubah routing, izin kamera, Screen Recording macOS, dan apakah port `47777` sudah digunakan proses lain.
 
+## 7. Installer Windows dan notifikasi device
+
+Workflow **Build Halo Deck Windows Installer** membuat installer NSIS `.exe` untuk Windows. Workflow berjalan otomatis ketika file Desktop Hub berubah di branch `main`, atau dapat dijalankan manual dari tab **Actions**. Installer membuat shortcut Start Menu/Desktop dan pengguna dapat memilih direktori instalasi. Untuk build lokal pada Windows, jalankan `npm install`, lalu `npm run dist:win` di folder `desktop`.
+
+Desktop Hub juga menampilkan notifikasi native Windows/macOS/Linux saat device berhasil melewati pairing. Notifikasi hanya muncul setelah autentikasi PIN/QR berhasil; discovery mDNS saja tidak dianggap sebagai koneksi.
+
+## 8. APK Android release signed
+
+Workflow **Build Halo Deck Signed Android Release** sengaja tidak menyimpan keystore di repository. Buat upload keystore sekali pada komputer pengembang menggunakan `keytool`, lalu simpan file tersebut offline. Encode file menjadi Base64 dan tambahkan empat GitHub Actions Secrets pada repository:
+
+| Secret | Isi |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | Isi Base64 dari file `.jks`. |
+| `ANDROID_KEY_ALIAS` | Alias key, misalnya `halo-deck`. |
+| `ANDROID_KEY_PASSWORD` | Password key alias. |
+| `ANDROID_STORE_PASSWORD` | Password keystore. |
+
+Contoh Windows PowerShell untuk membuat dan encode keystore:
+
+```powershell
+keytool -genkeypair -v -keystore halo-deck-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias halo-deck
+$base64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes('.\halo-deck-upload.jks'))
+Set-Clipboard $base64
+```
+
+Tempel nilai tersebut pada **GitHub → Settings → Secrets and variables → Actions → New repository secret**. Jangan commit `.jks`, `key.properties`, password, atau Base64 ke repository. Setelah secrets tersedia, jalankan workflow secara manual atau push tag yang cocok:
+
+```bash
+git tag android-v0.3.0
+git push origin android-v0.3.0
+```
+
+Workflow akan menghasilkan artifact `halo-deck-pocket-hub-release-signed`. Untuk distribusi publik, upload APK dari artifact tersebut ke GitHub Release atau Play Console sesuai kebutuhan signing aplikasi.
+
 ## Referensi
 
 [1]: https://www.electronjs.org/docs/latest/api/desktop-capturer "Electron desktopCapturer"

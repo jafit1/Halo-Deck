@@ -1,0 +1,36 @@
+name: Build Halo Deck Windows Installer
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'examples/lan-bridge/desktop/**'
+      - '.github/workflows/windows-installer.yml'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: examples/lan-bridge/desktop
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: examples/lan-bridge/desktop/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Validate source
+        run: npm run check
+      - name: Build NSIS installer
+        run: npm run dist:win
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: halo-deck-desktop-windows-installer
+          path: examples/lan-bridge/desktop/release/*.exe
