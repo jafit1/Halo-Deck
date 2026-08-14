@@ -21,3 +21,8 @@
 - [x] Add English/Indonesian language toggle for primary site copy.
 - [x] Adjust laptop layout so desktop compositions remain fully visible without crop.
 - [x] Test laptop/mobile, language, and interactive mode states.
+- [x] Translate all documentation and explanatory copy into consistent Indonesian.
+- [x] Normalize icon sizing, grouping, and labels across the header and sections.
+- [x] Add mobile Trackpad swipe and pinch gesture feedback.
+- [x] Add step-by-step installation modal for desktop and mobile download CTAs.
+- [x] Test Indonesian copy, modal states, gesture feedback, and responsive layout.
