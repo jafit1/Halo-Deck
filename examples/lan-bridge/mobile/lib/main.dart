@@ -295,7 +295,23 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
   ]));
 
   Widget _discoveryButton() => SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _discover, icon: const Icon(Icons.wifi_find), label: const Text('Cari Desktop Hub di jaringan'), style: OutlinedButton.styleFrom(foregroundColor: blue, side: const BorderSide(color: Color(0xFF3C5960)), padding: const EdgeInsets.symmetric(vertical: 14))));
-  Widget _discoveryList() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Desktop Hub di sekitar', style: TextStyle(color: Colors.white.withOpacity(.72), fontWeight: FontWeight.w600)), const SizedBox(height: 9), ...services.map((service) => Card(color: const Color(0xFF1A292D), child: ListTile(leading: const Icon(Icons.computer, color: blue), title: Text(service.name), subtitle: Text('${service.host}:${service.port}', style: const TextStyle(fontSize: 11)), trailing: const Icon(Icons.chevron_right), onTap: () => _pairDiscovered(service)))]);
+  Widget _discoveryList() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text('Desktop Hub di sekitar', style: TextStyle(color: Colors.white.withOpacity(.72), fontWeight: FontWeight.w600)),
+      const SizedBox(height: 9),
+      ...services.map((service) => Card(
+        color: const Color(0xFF1A292D),
+        child: ListTile(
+          leading: const Icon(Icons.computer, color: blue),
+          title: Text(service.name),
+          subtitle: Text('${service.host}:${service.port}', style: const TextStyle(fontSize: 11)),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => _pairDiscovered(service),
+        ),
+      )),
+    ],
+  );
 
   Widget _scannerView() => Stack(children: [
     MobileScanner(controller: scanner, onDetect: _scanResult),
@@ -344,11 +360,59 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
     _rotationChoices(displayRotation, _setDisplayRotation),
   ]));
 
-  Widget _trackpadView() => Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    const Text('Trackpad', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 32, letterSpacing: -1)), const SizedBox(height: 7), Text(gestureStatus, style: TextStyle(color: Colors.white.withOpacity(.62))), const SizedBox(height: 20),
-    Expanded(child: GestureDetector(onPanUpdate: (details) { connection.move(details.delta.dx.round(), details.delta.dy.round()); setState(() => gestureStatus = 'Geser pointer · ${details.delta.dx.round()}, ${details.delta.dy.round()}'); }, onTap: () { connection.click(); setState(() => gestureStatus = 'Klik kiri'); }, onLongPress: () { connection.click(right: true); setState(() => gestureStatus = 'Klik kanan'); }, onScaleUpdate: (details) { if (details.pointerCount > 1) { connection.scroll(0, ((1 - details.scale) * 30).round()); setState(() => gestureStatus = details.scale > 1 ? 'Pinch keluar · scroll naik' : 'Pinch masuk · scroll turun'); } }, child: Container(width: double.infinity, decoration: BoxDecoration(color: const Color(0xFF1B2B30), borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0xFF3B5960)), gradient: const RadialGradient(center: Alignment(-.3, -.5), radius: 1.1, colors: [Color(0xFF29464D), Color(0xFF17262A)])), child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.touch_app, size: 44, color: apricot), SizedBox(height: 13), Text('GESER · TAP · PINCH', style: TextStyle(letterSpacing: 1.8, fontSize: 11, color: blue)), SizedBox(height: 7), Text('Permukaan kendali lokal', style: TextStyle(color: Colors.white54, fontSize: 12))]))),
-    const SizedBox(height: 15), Row(children: [Expanded(child: OutlinedButton.icon(onPressed: () => connection.click(), icon: const Icon(Icons.mouse_outlined, size: 17), label: const Text('Klik kiri'))), const SizedBox(width: 9), Expanded(child: OutlinedButton.icon(onPressed: () => connection.click(right: true), icon: const Icon(Icons.more_horiz, size: 17), label: const Text('Klik kanan')))]),
-  ]));
+  Widget _trackpadView() => Padding(
+    padding: const EdgeInsets.all(20),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('Trackpad', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 32, letterSpacing: -1)),
+      const SizedBox(height: 7),
+      Text(gestureStatus, style: TextStyle(color: Colors.white.withOpacity(.62))),
+      const SizedBox(height: 20),
+      Expanded(
+        child: GestureDetector(
+          onPanUpdate: (details) {
+            connection.move(details.delta.dx.round(), details.delta.dy.round());
+            setState(() => gestureStatus = 'Geser pointer · ${details.delta.dx.round()}, ${details.delta.dy.round()}');
+          },
+          onTap: () {
+            connection.click();
+            setState(() => gestureStatus = 'Klik kiri');
+          },
+          onLongPress: () {
+            connection.click(right: true);
+            setState(() => gestureStatus = 'Klik kanan');
+          },
+          onScaleUpdate: (details) {
+            if (details.pointerCount > 1) {
+              connection.scroll(0, ((1 - details.scale) * 30).round());
+              setState(() => gestureStatus = details.scale > 1 ? 'Pinch keluar · scroll naik' : 'Pinch masuk · scroll turun');
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1B2B30),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0xFF3B5960)),
+              gradient: const RadialGradient(center: Alignment(-.3, -.5), radius: 1.1, colors: [Color(0xFF29464D), Color(0xFF17262A)]),
+            ),
+            child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(Icons.touch_app, size: 44, color: apricot),
+              SizedBox(height: 13),
+              Text('GESER · TAP · PINCH', style: TextStyle(letterSpacing: 1.8, fontSize: 11, color: blue)),
+              SizedBox(height: 7),
+              Text('Permukaan kendali lokal', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            ]),
+          ),
+        ),
+      ),
+      const SizedBox(height: 15),
+      Row(children: [
+        Expanded(child: OutlinedButton.icon(onPressed: () => connection.click(), icon: const Icon(Icons.mouse_outlined, size: 17), label: const Text('Klik kiri'))),
+        const SizedBox(width: 9),
+        Expanded(child: OutlinedButton.icon(onPressed: () => connection.click(right: true), icon: const Icon(Icons.more_horiz, size: 17), label: const Text('Klik kanan'))),
+      ]),
+    ]),
+  );
 
   Widget _clockView() {
     final palette = _paletteFor(clockTheme);
