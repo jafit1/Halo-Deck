@@ -44,3 +44,5 @@
 - [x] Add native desktop notification when a mobile device is authenticated.
 - [x] Test packaging scripts, workflow definitions, pairing notification, and documentation.
 - [ ] Add the four Android signing secrets in GitHub before running the signed release workflow.
+- [ ] Generate and back up the Android signing keystore outside the repository.
+- [ ] Trigger the signed Android release workflow and install the resulting APK on an Android device.
