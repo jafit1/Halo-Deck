@@ -9,6 +9,7 @@ class LanConnection {
   String? _pairId;
   String? _pin;
   String? _deviceName;
+  String? _deviceId;
   bool _manualDisconnect = false;
   bool _reconnectScheduled = false;
   String? token;
@@ -16,6 +17,8 @@ class LanConnection {
 
   final status = StreamController<String>.broadcast();
   final messages = StreamController<Map<String, dynamic>>.broadcast();
+
+  void setDeviceId(String deviceId) => _deviceId = deviceId;
 
   Future<void> connect({required Uri uri, required String pairId, required String pin, String deviceName = 'Pocket Hub Android'}) async {
     _manualDisconnect = false;
@@ -47,7 +50,7 @@ class LanConnection {
       if (event is List<int>) return;
       final message = jsonDecode(event.toString()) as Map<String, dynamic>;
       if (message['type'] == 'pair.challenge') {
-        channel.sink.add(jsonEncode({'type': 'pair.confirm', 'pairId': pairId, 'pin': pin, 'role': 'mobile', 'deviceName': _deviceName, 'platform': 'Android'}));
+        channel.sink.add(jsonEncode({'type': 'pair.confirm', 'pairId': pairId, 'pin': pin, 'role': 'mobile', 'deviceName': _deviceName, 'deviceId': _deviceId, 'platform': 'Android'}));
       } else if (message['type'] == 'pair.accepted') {
         token = message['token'] as String?;
         connected = true;

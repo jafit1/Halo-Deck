@@ -76,6 +76,9 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
 
   Future<void> _loadSavedDevice() async {
     preferences = await SharedPreferences.getInstance();
+    final deviceId = preferences?.getString('halo.deviceId') ?? 'pocket-${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}';
+    await preferences?.setString('halo.deviceId', deviceId);
+    connection.setDeviceId(deviceId);
     savedAddress = preferences?.getString('halo.address');
     savedPairId = preferences?.getString('halo.pairId');
     savedPin = preferences?.getString('halo.pin');

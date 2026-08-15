@@ -13,7 +13,7 @@ export function startLanServer({ port = PORT, onInput = () => {}, onPeer = () =>
   const service = bonjour.publish({ name: `Halo Deck · ${os.hostname()}`, type: SERVICE_TYPE, port, txt: { v: String(PROTOCOL_VERSION), pair: pairing.id } });
 
   wss.on('connection', (socket) => {
-    const peer = { socket, authenticated: false, role: null, deviceId: crypto.randomBytes(6).toString('hex'), deviceName: 'Perangkat baru', platform: 'Mobile', connectedAt: Date.now() };
+    const peer = { socket, authenticated: false, role: null, deviceId: `session-${crypto.randomBytes(6).toString('hex')}`, deviceName: 'Perangkat baru', platform: 'Mobile', connectedAt: Date.now() };
     peers.add(peer); notifyPeers();
     socket.send(JSON.stringify({ type: 'pair.challenge', pairId: pairing.id, pinHint: 'Scan the QR or enter the one-time PIN' }));
 
@@ -41,7 +41,9 @@ export function startLanServer({ port = PORT, onInput = () => {}, onPeer = () =>
 
   function authenticatePeer(peer, message, currentPairing) {
     if (message.pairId !== currentPairing.id || !safeEqual(message.pin, currentPairing.pin)) return peer.socket.close(1008, 'invalid pairing');
-    peer.authenticated = true; peer.role = message.role || 'mobile'; peer.deviceName = cleanLabel(message.deviceName, 'Pocket Hub'); peer.platform = cleanLabel(message.platform, 'Android');
+    const deviceId = cleanDeviceId(message.deviceId) || peer.deviceId;
+    for (const existing of peers) if (existing !== peer && existing.authenticated && existing.deviceId === deviceId) existing.socket.close(1000, 'replaced by reconnect');
+    peer.deviceId = deviceId; peer.authenticated = true; peer.role = message.role || 'mobile'; peer.deviceName = cleanLabel(message.deviceName, 'Pocket Hub'); peer.platform = cleanLabel(message.platform, 'Android');
     const sessionToken = crypto.randomBytes(32).toString('base64url');
     peer.socket.send(JSON.stringify({ type: 'pair.accepted', token: sealToken(sessionToken, currentPairing.pin, currentPairing.id), protocol: PROTOCOL_VERSION, server: lanAddress, port }));
     notifyPeers();
@@ -51,6 +53,7 @@ export function startLanServer({ port = PORT, onInput = () => {}, onPeer = () =>
 
 function publicPeer(peer) { return { id: peer.deviceId, name: peer.deviceName, platform: peer.platform, connectedAt: peer.connectedAt, status: peer.authenticated ? 'connected' : 'pairing' }; }
 function cleanLabel(value, fallback) { return typeof value === 'string' && value.trim().length > 0 ? value.trim().slice(0, 48) : fallback; }
+function cleanDeviceId(value) { return typeof value === 'string' && /^[A-Za-z0-9_-]{8,80}$/.test(value) ? value : null; }
 
 function createPairing() { return { id: crypto.randomBytes(8).toString('hex'), pin: String(crypto.randomInt(100000, 1000000)) }; }
 function safeEqual(a, b) { if (typeof a !== 'string' || typeof b !== 'string') return false; const left = Buffer.from(a); const right = Buffer.from(b); return left.length === right.length && crypto.timingSafeEqual(left, right); }

@@ -12,10 +12,11 @@ class LanScreenReceiver {
   final LanConnection connection;
   final renderer = RTCVideoRenderer();
   final ValueNotifier<ReceiverState> state = ValueNotifier(ReceiverState.initializing);
-  final List<RTCIceCandidate> _pendingCandidates = [];
+  final List<Map<String, dynamic>> _pendingCandidates = [];
   RTCPeerConnection? _peer;
   StreamSubscription<Map<String, dynamic>>? _signals;
   StreamSubscription<String>? _connectionStatus;
+  Future<void> _signalQueue = Future<void>.value();
   bool _disposed = false;
   bool _hasRemoteDescription = false;
 
@@ -46,7 +47,9 @@ class LanScreenReceiver {
           state.value = ReceiverState.waitingForStream;
         }
       };
-      _signals = connection.messages.stream.listen(_handleSignal, onError: (_) => _setError());
+      _signals = connection.messages.stream.listen((message) {
+        _signalQueue = _signalQueue.then((_) => _handleSignal(message)).catchError((_) => _setError());
+      }, onError: (_) => _setError());
       _connectionStatus = connection.status.stream.listen((status) {
         if (status == 'Terhubung' && !_disposed) _requestStream();
       });
@@ -72,31 +75,44 @@ class LanScreenReceiver {
       if (message['type'] == 'webrtc.offer') {
         await peer.setRemoteDescription(RTCSessionDescription(message['sdp'] as String, 'offer'));
         _hasRemoteDescription = true;
-        for (final candidate in List<RTCIceCandidate>.from(_pendingCandidates)) {
-          await peer.addCandidate(candidate);
+        for (final candidate in List<Map<String, dynamic>>.from(_pendingCandidates)) {
+          await _addValidatedCandidate(peer, candidate);
         }
         _pendingCandidates.clear();
         final answer = await peer.createAnswer({'offerToReceiveVideo': 1, 'offerToReceiveAudio': 0});
         await peer.setLocalDescription(answer);
         connection.sendSignal({'type': 'webrtc.answer', 'sdp': answer.sdp, 'descriptionType': 'answer'});
       } else if (message['type'] == 'webrtc.ice') {
-        final candidate = message['candidate'] as Map<String, dynamic>?;
+        final candidate = _candidateMap(message['candidate']);
         if (candidate == null) return;
-        final lineIndex = candidate['sdpMLineIndex'];
-        final ice = RTCIceCandidate(
-          candidate['candidate'] as String?,
-          candidate['sdpMid'] as String?,
-          lineIndex is int ? lineIndex : int.tryParse('$lineIndex'),
-        );
         if (_hasRemoteDescription) {
-          await peer.addCandidate(ice);
+          await _addValidatedCandidate(peer, candidate);
         } else {
-          _pendingCandidates.add(ice);
+          _pendingCandidates.add(candidate);
         }
       }
     } catch (_) {
       _setError();
     }
+  }
+
+  Map<String, dynamic>? _candidateMap(dynamic raw) {
+    if (raw is! Map) return null;
+    final value = raw['candidate'];
+    final mid = raw['sdpMid'];
+    final rawIndex = raw['sdpMLineIndex'];
+    final index = rawIndex is int ? rawIndex : int.tryParse('$rawIndex');
+    if (value is! String || !value.startsWith('candidate:') || mid is! String || mid.isEmpty || index == null || index < 0) return null;
+    return {'candidate': value, 'sdpMid': mid, 'sdpMLineIndex': index};
+  }
+
+  Future<void> _addValidatedCandidate(RTCPeerConnection peer, Map<String, dynamic> candidate) async {
+    if (_disposed || peer != _peer) return;
+    await peer.addCandidate(RTCIceCandidate(
+      candidate['candidate'] as String,
+      candidate['sdpMid'] as String,
+      candidate['sdpMLineIndex'] as int,
+    ));
   }
 
   void _setError() {

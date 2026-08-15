@@ -5,7 +5,7 @@ import QRCode from 'qrcode';
 import { startLanServer } from './server.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-let mainWindow; let bridge; let bridgeInfo; let previousDeviceIds = new Set();
+let mainWindow; let bridge; let bridgeInfo; let previousDeviceIds = new Set(); const notificationTimes = new Map();
 
 function sendToRenderer(channel, value) { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, value); }
 
@@ -28,6 +28,9 @@ app.on('before-quit', () => bridge?.close());
 
 function showDeviceNotification(device) {
   if (!Notification.isSupported()) return;
+  const now = Date.now(); const lastNotice = notificationTimes.get(device.id) ?? 0;
+  if (now - lastNotice < 60_000) return;
+  notificationTimes.set(device.id, now);
   new Notification({ title: 'Halo Deck · Device terhubung', body: `${device.name} (${device.platform}) berhasil masuk ke sesi LAN.`, silent: false }).show();
 }
 
