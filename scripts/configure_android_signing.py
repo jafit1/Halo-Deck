@@ -6,7 +6,10 @@ text = path.read_text(encoding='utf-8')
 if 'halo-deck-upload.jks' in text:
     raise SystemExit('Android signing is already configured')
 
-properties = 'val keystoreProperties = java.util.Properties()\nval keystorePropertiesFile = rootProject.file("key.properties")\nif (keystorePropertiesFile.exists()) {\n    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))\n}\n\n'
+imports = 'import java.io.FileInputStream\nimport java.util.Properties\n\n'
+properties = 'val keystoreProperties = Properties()\nval keystorePropertiesFile = rootProject.file("key.properties")\nif (keystorePropertiesFile.exists()) {\n    keystoreProperties.load(FileInputStream(keystorePropertiesFile))\n}\n\n'
+if not text.startswith('import java.io.FileInputStream'):
+    text = imports + text
 text = text.replace('}\n\nandroid {', f'}}\n\n{properties}android {{', 1)
 signing = '''    signingConfigs {
         create("release") {

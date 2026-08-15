@@ -20,10 +20,21 @@ Dokumen ini menjelaskan alur dari awal untuk membuat **keystore Android**, memas
 Anda memerlukan akun GitHub yang memiliki akses **Write/Admin** ke repository `jafit1/Halo-Deck`, koneksi internet sementara untuk GitHub Actions, serta Java Development Kit yang menyediakan perintah `keytool`. Anda tidak memerlukan Flutter atau Android Studio untuk proses build cloud ini. Untuk memastikan `keytool` tersedia, buka **PowerShell** dan jalankan:
 
 ```powershell
-keytool -version
+Get-Command keytool
 ```
 
-Jika perintah tidak dikenali, pasang JDK 17 atau gunakan `keytool.exe` dari Android Studio, biasanya berada di folder `jbr\bin` pada instalasi Android Studio. Setelah keystore dibuat, internet tidak lagi diperlukan ketika menggunakan Halo Deck melalui WiFi/LAN lokal.
+Jika perintah menampilkan baris `CommandType`, `Name`, dan lokasi `Source`, `keytool` sudah dapat digunakan. Jika perintah tidak dikenali, pasang JDK 17 atau gunakan `keytool.exe` dari Android Studio, biasanya berada di folder `jbr\bin` pada instalasi Android Studio. Setelah keystore dibuat, internet tidak lagi diperlukan ketika menggunakan Halo Deck melalui WiFi/LAN lokal.
+
+### Jika Windows menampilkan `keytool is not recognized`
+
+Jangan mengetik teks prompt `PS C:\...>`, `>` atau `>>`; itu hanya penanda dari PowerShell. Bila Android Studio sudah terpasang, jalankan dua perintah berikut terlebih dahulu. Cara ini memakai Java bawaan Android Studio dan tidak membutuhkan perubahan PATH.
+
+```powershell
+$keytool = "$env:ProgramFiles\Android\Android Studio\jbr\bin\keytool.exe"
+Test-Path $keytool
+```
+
+Jika hasilnya `True`, lanjutkan dengan `& $keytool -help`, lalu gunakan bentuk `& $keytool` pada awal perintah pembuatan keystore di langkah 1. Jika hasilnya `False` tetapi `Get-Command keytool` menampilkan sebuah lokasi, Anda sudah dapat memakai `keytool` langsung—`Test-Path keytool` bernilai `False` karena ia hanya mencari file lokal bernama `keytool`, bukan perintah pada PATH. Jika kedua cara tidak menemukan perintah, pasang JDK 17 dari terminal PowerShell dengan `winget install -e --id Microsoft.OpenJDK.17`, tutup PowerShell, buka kembali, lalu verifikasi dengan `Get-Command keytool`. Apabila `winget` tidak tersedia, pasang [Microsoft Build of OpenJDK 17](https://learn.microsoft.com/java/openjdk/download) dengan opsi instalasi default.
 
 ## 1. Buat keystore sekali saja
 
@@ -41,6 +52,8 @@ keytool -genkeypair -v `
 ```
 
 Saat `keytool` meminta isian, gunakan kata sandi kuat untuk **keystore password**. Untuk memudahkan konfigurasi pertama, gunakan kata sandi yang sama saat diminta **key password**; workflow Halo Deck juga mendukung dua kata sandi yang berbeda. Simpan kedua kata sandi di password manager, lalu buat cadangan file `.jks` yang terenkripsi di lokasi terpisah.
+
+Jika `keytool` selesai menyimpan file dan menampilkan peringatan bahwa **JKS adalah format proprietary**, keystore tetap valid untuk workflow Halo Deck. Jangan menjalankan migrasi ke PKCS12 pada tahap ini; gunakan file `halo-deck-upload.jks` yang baru dibuat secara konsisten untuk semua rilis berikutnya.
 
 > Jangan membuat ulang keystore ketika Anda hendak menerbitkan pembaruan aplikasi. APK pembaruan harus ditandatangani dengan key yang sama agar dapat menggantikan versi yang telah terpasang. [1]
 

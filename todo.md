@@ -43,6 +43,11 @@
 - [x] Add Android release signing workflow using GitHub Secrets and keystore decoding.
 - [x] Add native desktop notification when a mobile device is authenticated.
 - [x] Test packaging scripts, workflow definitions, pairing notification, and documentation.
-- [ ] Add the four Android signing secrets in GitHub before running the signed release workflow.
+- [x] Add the four Android signing secrets in GitHub before running the signed release workflow.
 - [ ] Generate and back up the Android signing keystore outside the repository.
 - [ ] Trigger the signed Android release workflow and install the resulting APK on an Android device.
+- [ ] Diagnose the first signed Android workflow failure and rerun the corrected workflow.
+- [x] Identify the signed-build failure as unresolved Java type references in the generated Gradle Kotlin script.
+- [ ] Install or locate a Windows JDK so `keytool.exe` can create the Android signing keystore.
+- [ ] Confirm the resolved Windows `keytool` command, then generate the keystore without adding PowerShell prompt characters.
+- [x] Generate the Android signing keystore with the `halo-deck-upload` alias.
