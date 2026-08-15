@@ -58,8 +58,9 @@
 - [x] Confirm the Screen mode crash is a WebRTC native SIGABRT from `sdk/android/src/jni/jvm.cc` after an unhandled Android exception.
 - [x] Identify unvalidated ICE candidates reaching Android `PeerConnection.addIceCandidate` as the immediate native crash path.
 - [x] Identify per-reconnect random device IDs as the cause of duplicate Desktop Hub connection notifications.
-- [ ] Apply and validate a focused native crash fix before publishing another Pocket Hub APK.
-- [ ] Stop duplicate Desktop Hub “device connected” notifications during Pocket Hub reconnects or duplicate-session attempts.
+- [x] Apply and validate a focused native crash fix before publishing another Pocket Hub APK.
+- [x] Stop duplicate Desktop Hub “device connected” notifications during Pocket Hub reconnects or duplicate-session attempts.
+- [x] Build corrected signed Android and Windows installers successfully in runs 31869455955 and 31869465169.
 - [ ] Install or locate a Windows JDK so `keytool.exe` can create the Android signing keystore.
 - [ ] Confirm the resolved Windows `keytool` command, then generate the keystore without adding PowerShell prompt characters.
 - [x] Generate the Android signing keystore with the `halo-deck-upload` alias.
