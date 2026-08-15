@@ -46,8 +46,13 @@
 - [x] Add the four Android signing secrets in GitHub before running the signed release workflow.
 - [ ] Generate and back up the Android signing keystore outside the repository.
 - [ ] Trigger the signed Android release workflow and install the resulting APK on an Android device.
-- [ ] Diagnose the first signed Android workflow failure and rerun the corrected workflow.
+- [x] Diagnose the first signed Android workflow failure and rerun the corrected workflow.
 - [x] Identify the signed-build failure as unresolved Java type references in the generated Gradle Kotlin script.
+- [ ] Capture and resolve the Android Pocket Hub Screen mode force-close failure.
+- [ ] Add Desktop Hub display-source selection for full screen, specific window, lyric preview, and media applications.
+- [ ] Add Screen mode rotation and keep-awake controls that remain active while the display connection is open.
+- [ ] Add Ambient Clock rotation, multiple visual themes, and selectable layouts.
+- [ ] Build, install, and validate an updated signed Android APK with Screen and Clock enhancements.
 - [ ] Install or locate a Windows JDK so `keytool.exe` can create the Android signing keystore.
 - [ ] Confirm the resolved Windows `keytool` command, then generate the keystore without adding PowerShell prompt characters.
 - [x] Generate the Android signing keystore with the `halo-deck-upload` alias.
