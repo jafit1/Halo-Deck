@@ -300,7 +300,39 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
   ]));
 
   void _showDiagnostics() {
-    showModalBottomSheet<void>(context: context, backgroundColor: const Color(0xFF132125), isScrollControlled: true, builder: (context) => SafeArea(child: SizedBox(height: MediaQuery.of(context).size.height * .72, child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [const Text('LOG DIAGNOSTIK', style: TextStyle(color: blue, letterSpacing: 1.3, fontWeight: FontWeight.w700)), const Spacer(), TextButton(onPressed: () => HaloDiagnostics.clear(), child: const Text('Bersihkan'))]), const SizedBox(height: 8), const Text('Kirim screenshot log ini saat melaporkan bug.', style: TextStyle(color: Colors.white54, fontSize: 12)), const SizedBox(height: 12), Expanded(child: ValueListenableBuilder<List<String>>(valueListenable: HaloDiagnostics.entries, builder: (_, logs, __) => ListView.builder(reverse: true, itemCount: logs.length, itemBuilder: (_, index) => Padding(padding: const EdgeInsets.only(bottom: 7), child: Text(logs[logs.length - 1 - index], style: const TextStyle(fontFamily: 'monospace', fontSize: 10, color: Color(0xFFB9D2D7)))))))]))));
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF132125),
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * .72,
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [const Text('LOG DIAGNOSTIK', style: TextStyle(color: blue, letterSpacing: 1.3, fontWeight: FontWeight.w700)), const Spacer(), TextButton(onPressed: HaloDiagnostics.clear, child: const Text('Bersihkan'))]),
+                const SizedBox(height: 8),
+                const Text('Kirim screenshot log ini saat melaporkan bug.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                const SizedBox(height: 12),
+                Expanded(child: ValueListenableBuilder<List<String>>(
+                  valueListenable: HaloDiagnostics.entries,
+                  builder: (_, logs, __) => ListView.builder(
+                    reverse: true,
+                    itemCount: logs.length,
+                    itemBuilder: (_, index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 7),
+                      child: Text(logs[logs.length - 1 - index], style: const TextStyle(fontFamily: 'monospace', fontSize: 10, color: Color(0xFFB9D2D7))),
+                    ),
+                  ),
+                )),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _homeView() => SingleChildScrollView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
