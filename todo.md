@@ -65,6 +65,7 @@
 - [x] Add fullscreen controls to Pocket Hub Screen and Ambient Clock modes.
 - [x] Tune WebRTC display streaming for responsive LAN preview and record stream state diagnostics.
 - [x] Simplify Android and Desktop Hub wording and add restrained button feedback animations.
+- [x] Validate Android and Windows 0.5.0 installers in GitHub Actions runs 32101443491 and 32101158563.
 - [x] Add structured Desktop Hub and Pocket Hub diagnostic logs for pairing, signaling, capture, and reconnect failures.
 - [ ] Install or locate a Windows JDK so `keytool.exe` can create the Android signing keystore.
 - [ ] Confirm the resolved Windows `keytool` command, then generate the keystore without adding PowerShell prompt characters.
