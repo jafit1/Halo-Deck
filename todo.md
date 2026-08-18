@@ -66,6 +66,10 @@
 - [x] Tune WebRTC display streaming for responsive LAN preview and record stream state diagnostics.
 - [x] Simplify Android and Desktop Hub wording and add restrained button feedback animations.
 - [x] Validate Android and Windows 0.5.0 installers in GitHub Actions runs 32101443491 and 32101158563.
+- [x] Add a deliberate lyric-region crop flow for Spotify and browser lyric windows.
+- [x] Persist the last selected screen or application and offer one-click reuse on the next stream.
+- [x] Add additional Ambient Clock themes and layouts with a fullscreen settings surface.
+- [x] Add selectable LAN stream profiles that balance 1080p detail, frame rate, bitrate, and latency diagnostics.
 - [x] Add structured Desktop Hub and Pocket Hub diagnostic logs for pairing, signaling, capture, and reconnect failures.
 - [ ] Install or locate a Windows JDK so `keytool.exe` can create the Android signing keystore.
 - [ ] Confirm the resolved Windows `keytool` command, then generate the keystore without adding PowerShell prompt characters.

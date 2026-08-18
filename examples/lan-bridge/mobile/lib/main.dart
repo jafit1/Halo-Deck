@@ -18,8 +18,8 @@ const apricot = Color(0xFFF3A063);
 
 enum PocketMode { home, display, trackpad, clock }
 enum PresentationRotation { automatic, portrait, landscape }
-enum ClockTheme { midnight, ember, ocean, paper }
-enum ClockLayout { classic, split, minimal }
+enum ClockTheme { midnight, ember, ocean, paper, forest, violet, solar, mono }
+enum ClockLayout { classic, split, minimal, stacked, ring, dateFirst }
 
 class ClockPalette {
   const ClockPalette(this.background, this.foreground, this.accent, this.muted);
@@ -482,7 +482,7 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
   Widget _clockView() {
     final palette = _paletteFor(clockTheme);
     return Container(color: palette.background, width: double.infinity, height: double.infinity, child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(22, 18, 22, 24), child: Column(children: [
-      if (clockFullscreen) Align(alignment: Alignment.topRight, child: IconButton(onPressed: () => _setClockFullscreen(false), icon: Icon(Icons.fullscreen_exit, color: palette.foreground), tooltip: 'Keluar fullscreen')),
+      if (clockFullscreen) Align(alignment: Alignment.topRight, child: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(onPressed: _showClockSettings, icon: Icon(Icons.tune, color: palette.foreground), tooltip: 'Atur Jam'), IconButton(onPressed: () => _setClockFullscreen(false), icon: Icon(Icons.fullscreen_exit, color: palette.foreground), tooltip: 'Keluar fullscreen')])),
       const SizedBox(height: 16), Text('AMBIENT CLOCK', style: TextStyle(color: palette.accent, fontSize: 11, letterSpacing: 2.4)), const SizedBox(height: 20), _clockFace(palette), const SizedBox(height: 27),
       if (!clockFullscreen) Container(width: double.infinity, padding: const EdgeInsets.all(15), decoration: BoxDecoration(color: palette.foreground.withOpacity(.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: palette.foreground.withOpacity(.13))), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('TEMA', style: TextStyle(color: palette.accent, fontSize: 10, letterSpacing: 1.3)), const SizedBox(height: 7), _clockThemeChoices(palette), const SizedBox(height: 13),
@@ -494,6 +494,25 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
     ])));
   }
 
+  void _showClockSettings() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _paletteFor(clockTheme).background,
+      builder: (context) => StatefulBuilder(builder: (context, setSheetState) {
+        final palette = _paletteFor(clockTheme);
+        return SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(18, 14, 18, 22), child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('ATUR JAM', style: TextStyle(color: palette.accent, letterSpacing: 1.4, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 14), Text('TEMA', style: TextStyle(color: palette.foreground, fontSize: 11, fontWeight: FontWeight.w700)), const SizedBox(height: 7),
+          Wrap(spacing: 7, runSpacing: 7, children: ClockTheme.values.map((item) => ChoiceChip(label: Text(_themeName(item)), selected: clockTheme == item, onSelected: (_) async { await _setClockTheme(item); setSheetState(() {}); }, selectedColor: palette.accent.withOpacity(.28), labelStyle: TextStyle(color: palette.foreground))).toList()),
+          const SizedBox(height: 16), Text('LAYOUT', style: TextStyle(color: palette.foreground, fontSize: 11, fontWeight: FontWeight.w700)), const SizedBox(height: 7),
+          Wrap(spacing: 7, runSpacing: 7, children: ClockLayout.values.map((item) => ChoiceChip(label: Text(_layoutName(item)), selected: clockLayout == item, onSelected: (_) async { await _setClockLayout(item); setSheetState(() {}); }, selectedColor: palette.accent.withOpacity(.28), labelStyle: TextStyle(color: palette.foreground))).toList()),
+          const SizedBox(height: 16), Text('ROTASI', style: TextStyle(color: palette.foreground, fontSize: 11, fontWeight: FontWeight.w700)), const SizedBox(height: 7),
+          _rotationChoices(clockRotation, (value) async { await _setClockRotation(value); setSheetState(() {}); }, foreground: palette.foreground, accent: palette.accent),
+        ]))));
+      }),
+    );
+  }
+
   Widget _clockFace(ClockPalette palette) {
     final hour = now.hour.toString().padLeft(2, '0');
     final minute = now.minute.toString().padLeft(2, '0');
@@ -503,6 +522,12 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
         return Column(children: [Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text(hour, style: TextStyle(fontSize: 94, height: .9, fontWeight: FontWeight.w200, color: palette.foreground)), Padding(padding: const EdgeInsets.symmetric(horizontal: 9), child: Text(':', style: TextStyle(fontSize: 58, color: palette.accent))), Text(minute, style: TextStyle(fontSize: 94, height: .9, fontWeight: FontWeight.w700, color: palette.foreground))]), const SizedBox(height: 16), Text(date, style: TextStyle(color: palette.accent, letterSpacing: 1.3))]);
       case ClockLayout.minimal:
         return Column(children: [Text(hour, style: TextStyle(fontSize: 104, height: .78, fontWeight: FontWeight.w200, color: palette.foreground)), Container(width: 35, height: 2, color: palette.accent, margin: const EdgeInsets.symmetric(vertical: 14)), Text(minute, style: TextStyle(fontSize: 104, height: .78, fontWeight: FontWeight.w700, color: palette.foreground)), const SizedBox(height: 21), Text(date, style: TextStyle(color: palette.muted, letterSpacing: 1.2))]);
+      case ClockLayout.stacked:
+        return Column(children: [Text(hour, style: TextStyle(fontSize: 118, height: .72, fontWeight: FontWeight.w800, color: palette.foreground)), const SizedBox(height: 10), Text(minute, style: TextStyle(fontSize: 118, height: .72, fontWeight: FontWeight.w200, color: palette.accent)), const SizedBox(height: 24), Text(date, style: TextStyle(color: palette.muted, letterSpacing: 2.1))]);
+      case ClockLayout.ring:
+        return Container(width: 258, height: 258, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: palette.accent, width: 2), color: palette.foreground.withOpacity(.04)), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text('$hour:$minute', style: TextStyle(fontSize: 61, height: 1, fontWeight: FontWeight.w300, color: palette.foreground)), const SizedBox(height: 13), Container(width: 28, height: 2, color: palette.accent), const SizedBox(height: 13), Text(date, style: TextStyle(color: palette.muted, fontSize: 11, letterSpacing: 1.1))]));
+      case ClockLayout.dateFirst:
+        return Column(children: [Text(date.toUpperCase(), style: TextStyle(color: palette.accent, letterSpacing: 2.4, fontWeight: FontWeight.w700)), const SizedBox(height: 24), Text('$hour:$minute', style: TextStyle(fontSize: 86, height: .9, fontWeight: FontWeight.w200, letterSpacing: -4, color: palette.foreground)), const SizedBox(height: 14), Text('HALO DECK', style: TextStyle(color: palette.muted, fontSize: 10, letterSpacing: 3.2))]);
       case ClockLayout.classic:
         return Column(children: [Text('$hour:$minute', style: TextStyle(fontSize: 78, height: 1, fontWeight: FontWeight.w200, letterSpacing: -4, color: palette.foreground)), const SizedBox(height: 10), Text(date, style: TextStyle(color: palette.accent, letterSpacing: 1.3)), const SizedBox(height: 14), Text('Sesi LAN tetap aktif', style: TextStyle(color: palette.muted, fontSize: 12))]);
     }
@@ -513,9 +538,9 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
   Widget _clockLayoutChoices(ClockPalette palette) => Wrap(spacing: 7, runSpacing: 7, children: ClockLayout.values.map((item) => ChoiceChip(label: Text(_layoutName(item), style: const TextStyle(fontSize: 11)), selected: clockLayout == item, onSelected: (_) => _setClockLayout(item), selectedColor: palette.accent.withOpacity(.28), labelStyle: TextStyle(color: palette.foreground), side: BorderSide(color: palette.foreground.withOpacity(.18)))).toList());
 
   String _rotationName(PresentationRotation value) => switch (value) { PresentationRotation.automatic => 'Otomatis', PresentationRotation.portrait => 'Potret', PresentationRotation.landscape => 'Lanskap' };
-  String _themeName(ClockTheme value) => switch (value) { ClockTheme.midnight => 'Midnight', ClockTheme.ember => 'Ember', ClockTheme.ocean => 'Ocean', ClockTheme.paper => 'Paper' };
-  String _layoutName(ClockLayout value) => switch (value) { ClockLayout.classic => 'Klasik', ClockLayout.split => 'Split', ClockLayout.minimal => 'Minimal' };
-  ClockPalette _paletteFor(ClockTheme value) => switch (value) { ClockTheme.midnight => const ClockPalette(Color(0xFF090F12), paper, apricot, Color(0xFF71909A)), ClockTheme.ember => const ClockPalette(Color(0xFF24130D), Color(0xFFFFE9D8), Color(0xFFFF9F68), Color(0xFFC39175)), ClockTheme.ocean => const ClockPalette(Color(0xFF071925), Color(0xFFE0F4FF), Color(0xFF6DD6FF), Color(0xFF79A8BB)), ClockTheme.paper => const ClockPalette(Color(0xFFF1ECE1), Color(0xFF202C30), Color(0xFFD76835), Color(0xFF748083)) };
+  String _themeName(ClockTheme value) => switch (value) { ClockTheme.midnight => 'Midnight', ClockTheme.ember => 'Ember', ClockTheme.ocean => 'Ocean', ClockTheme.paper => 'Paper', ClockTheme.forest => 'Forest', ClockTheme.violet => 'Violet', ClockTheme.solar => 'Solar', ClockTheme.mono => 'Mono' };
+  String _layoutName(ClockLayout value) => switch (value) { ClockLayout.classic => 'Klasik', ClockLayout.split => 'Split', ClockLayout.minimal => 'Minimal', ClockLayout.stacked => 'Stack', ClockLayout.ring => 'Ring', ClockLayout.dateFirst => 'Tanggal' };
+  ClockPalette _paletteFor(ClockTheme value) => switch (value) { ClockTheme.midnight => const ClockPalette(Color(0xFF090F12), paper, apricot, Color(0xFF71909A)), ClockTheme.ember => const ClockPalette(Color(0xFF24130D), Color(0xFFFFE9D8), Color(0xFFFF9F68), Color(0xFFC39175)), ClockTheme.ocean => const ClockPalette(Color(0xFF071925), Color(0xFFE0F4FF), Color(0xFF6DD6FF), Color(0xFF79A8BB)), ClockTheme.paper => const ClockPalette(Color(0xFFF1ECE1), Color(0xFF202C30), Color(0xFFD76835), Color(0xFF748083)), ClockTheme.forest => const ClockPalette(Color(0xFF0D1D17), Color(0xFFE3F5E8), Color(0xFF9DD890), Color(0xFF82A992)), ClockTheme.violet => const ClockPalette(Color(0xFF171126), Color(0xFFF1E9FF), Color(0xFFC59BFF), Color(0xFF9E91B8)), ClockTheme.solar => const ClockPalette(Color(0xFF241B08), Color(0xFFFFF5CE), Color(0xFFFFC148), Color(0xFFC6A96B)), ClockTheme.mono => const ClockPalette(Color(0xFF101010), Color(0xFFF5F5F5), Color(0xFFB9B9B9), Color(0xFF7A7A7A)) };
   String _month(int month) => const ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][month - 1];
 
   @override
