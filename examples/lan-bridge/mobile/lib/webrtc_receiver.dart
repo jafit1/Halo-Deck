@@ -7,9 +7,10 @@ import 'connection.dart';
 enum ReceiverState { initializing, waitingForStream, streaming, error, disposed }
 
 class LanScreenReceiver {
-  LanScreenReceiver(this.connection);
+  LanScreenReceiver(this.connection, {this.onDiagnostic});
 
   final LanConnection connection;
+  final Future<void> Function(String event, Map<String, dynamic> details)? onDiagnostic;
   final renderer = RTCVideoRenderer();
   final ValueNotifier<ReceiverState> state = ValueNotifier(ReceiverState.initializing);
   final List<Map<String, dynamic>> _pendingCandidates = [];
@@ -20,8 +21,11 @@ class LanScreenReceiver {
   bool _disposed = false;
   bool _hasRemoteDescription = false;
 
+  void _log(String event, [Map<String, dynamic> details = const {}]) { onDiagnostic?.call(event, details); }
+
   Future<void> start() async {
     try {
+      _log('screen.receiver.start');
       await renderer.initialize();
       if (_disposed) return;
       _peer = await createPeerConnection({
@@ -34,6 +38,7 @@ class LanScreenReceiver {
         if (event.streams.isNotEmpty && !_disposed) {
           renderer.srcObject = event.streams.first;
           state.value = ReceiverState.streaming;
+          _log('screen.track');
         }
       };
       _peer!.onIceCandidate = (candidate) {
@@ -45,6 +50,7 @@ class LanScreenReceiver {
         if (_disposed) return;
         if (value == RTCPeerConnectionState.RTCPeerConnectionStateFailed || value == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
           state.value = ReceiverState.waitingForStream;
+          _log('screen.peerState', {'state': value.name});
         }
       };
       _signals = connection.messages.stream.listen((message) {
@@ -56,6 +62,7 @@ class LanScreenReceiver {
       state.value = ReceiverState.waitingForStream;
       _requestStream();
     } catch (_) {
+      _log('screen.receiver.error');
       _setError();
       rethrow;
     }
@@ -64,6 +71,7 @@ class LanScreenReceiver {
   void _requestStream() {
     if (!_disposed && connection.connected) {
       state.value = ReceiverState.waitingForStream;
+      _log('screen.request');
       connection.sendSignal({'type': 'webrtc.request'});
     }
   }
@@ -73,6 +81,7 @@ class LanScreenReceiver {
     if (_disposed || peer == null) return;
     try {
       if (message['type'] == 'webrtc.offer') {
+        _log('screen.offer');
         await peer.setRemoteDescription(RTCSessionDescription(message['sdp'] as String, 'offer'));
         _hasRemoteDescription = true;
         for (final candidate in List<Map<String, dynamic>>.from(_pendingCandidates)) {
@@ -84,7 +93,7 @@ class LanScreenReceiver {
         connection.sendSignal({'type': 'webrtc.answer', 'sdp': answer.sdp, 'descriptionType': 'answer'});
       } else if (message['type'] == 'webrtc.ice') {
         final candidate = _candidateMap(message['candidate']);
-        if (candidate == null) return;
+        if (candidate == null) { _log('screen.iceIgnored'); return; }
         if (_hasRemoteDescription) {
           await _addValidatedCandidate(peer, candidate);
         } else {
@@ -116,12 +125,13 @@ class LanScreenReceiver {
   }
 
   void _setError() {
-    if (!_disposed) state.value = ReceiverState.error;
+    if (!_disposed) { _log('screen.error'); state.value = ReceiverState.error; }
   }
 
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
+    _log('screen.receiver.dispose');
     state.value = ReceiverState.disposed;
     await _signals?.cancel();
     await _connectionStatus?.cancel();

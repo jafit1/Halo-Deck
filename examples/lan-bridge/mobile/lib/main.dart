@@ -7,6 +7,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'connection.dart';
+import 'diagnostics.dart';
 import 'discovery.dart';
 import 'webrtc_receiver.dart';
 
@@ -53,6 +54,8 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
   bool openingDisplay = false;
   bool displayKeepAwake = true;
   bool clockKeepAwake = true;
+  bool displayFullscreen = true;
+  bool clockFullscreen = true;
   DateTime now = DateTime.now();
   Timer? clockTimer;
   LanScreenReceiver? receiver;
@@ -66,6 +69,7 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
   void initState() {
     super.initState();
     statusSubscription = connection.status.stream.listen((value) {
+      HaloDiagnostics.write('connection.status', {'value': value});
       if (mounted) setState(() => connectionStatus = value);
     });
     clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -76,6 +80,7 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
 
   Future<void> _loadSavedDevice() async {
     preferences = await SharedPreferences.getInstance();
+    await HaloDiagnostics.initialize();
     final deviceId = preferences?.getString('halo.deviceId') ?? 'pocket-${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}';
     await preferences?.setString('halo.deviceId', deviceId);
     connection.setDeviceId(deviceId);
@@ -84,6 +89,8 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
     savedPin = preferences?.getString('halo.pin');
     displayKeepAwake = preferences?.getBool('display.keepAwake') ?? true;
     clockKeepAwake = preferences?.getBool('clock.keepAwake') ?? true;
+    displayFullscreen = preferences?.getBool('display.fullscreen') ?? true;
+    clockFullscreen = preferences?.getBool('clock.fullscreen') ?? true;
     displayRotation = _rotationFrom(preferences?.getString('display.rotation'));
     clockRotation = _rotationFrom(preferences?.getString('clock.rotation'));
     clockTheme = _themeFrom(preferences?.getString('clock.theme'));
@@ -164,7 +171,7 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
       return;
     }
     setState(() { openingDisplay = true; displayError = null; });
-    final candidate = LanScreenReceiver(connection);
+    final candidate = LanScreenReceiver(connection, onDiagnostic: HaloDiagnostics.write);
     try {
       await candidate.start();
       if (!mounted) {
@@ -175,6 +182,7 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
       setState(() { receiver = candidate; openingDisplay = false; mode = PocketMode.display; });
       await _syncPresentation();
     } catch (_) {
+      HaloDiagnostics.write('screen.open.error');
       await candidate.dispose();
       if (mounted) setState(() { openingDisplay = false; displayError = 'Penerima layar tidak dapat disiapkan. Coba mulai ulang mode Layar.'; });
     }
@@ -203,6 +211,8 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
   Future<void> _syncPresentation() async {
     final keepAwake = (receiver != null && displayKeepAwake) || (mode == PocketMode.clock && clockKeepAwake);
     await WakelockPlus.toggle(enable: keepAwake);
+    final fullscreen = (mode == PocketMode.display && displayFullscreen) || (mode == PocketMode.clock && clockFullscreen);
+    await SystemChrome.setEnabledSystemUIMode(fullscreen ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge);
     final target = mode == PocketMode.display ? displayRotation : mode == PocketMode.clock ? clockRotation : PresentationRotation.automatic;
     switch (target) {
       case PresentationRotation.automatic:
@@ -238,6 +248,18 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
     await _syncPresentation();
   }
 
+  Future<void> _setDisplayFullscreen(bool value) async {
+    setState(() => displayFullscreen = value);
+    await preferences?.setBool('display.fullscreen', value);
+    await _syncPresentation();
+  }
+
+  Future<void> _setClockFullscreen(bool value) async {
+    setState(() => clockFullscreen = value);
+    await preferences?.setBool('clock.fullscreen', value);
+    await _syncPresentation();
+  }
+
   Future<void> _setClockTheme(ClockTheme value) async {
     setState(() => clockTheme = value);
     await preferences?.setString('clock.theme', value.name);
@@ -259,24 +281,32 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
     home: Scaffold(body: SafeArea(child: scanning ? _scannerView() : _appView())),
   );
 
-  Widget _appView() => Column(children: [
-    _topBar(),
+  Widget _appView() {
+    final fullscreen = (mode == PocketMode.display && displayFullscreen) || (mode == PocketMode.clock && clockFullscreen);
+    return Column(children: [
+    if (!fullscreen) _topBar(),
     Expanded(child: AnimatedSwitcher(duration: const Duration(milliseconds: 220), child: switch (mode) { PocketMode.home => _homeView(), PocketMode.display => _displayView(), PocketMode.trackpad => _trackpadView(), PocketMode.clock => _clockView() })),
-    if (connection.connected) _modeBar(),
+    if (connection.connected && !fullscreen) _modeBar(),
   ]);
+  }
 
   Widget _topBar() => Padding(padding: const EdgeInsets.fromLTRB(20, 18, 20, 12), child: Row(children: [
     Container(width: 36, height: 36, decoration: BoxDecoration(color: const Color(0xFF0D1518), border: Border.all(color: blue)), child: const Icon(Icons.bolt, color: apricot, size: 20)),
     const SizedBox(width: 11),
     const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('HALO Deck', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)), Text('POCKET HUB', style: TextStyle(color: blue, fontSize: 9, letterSpacing: 1.4))]),
     const Spacer(),
+    IconButton(onPressed: _showDiagnostics, tooltip: 'Log', icon: const Icon(Icons.bug_report_outlined, size: 19)),
     Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7), decoration: BoxDecoration(color: connection.connected ? const Color(0xFF20392E) : const Color(0xFF2B3030), borderRadius: BorderRadius.circular(20)), child: Row(children: [Icon(Icons.circle, size: 8, color: connection.connected ? const Color(0xFF8ED4A9) : apricot), const SizedBox(width: 7), Text(connectionStatus, style: const TextStyle(fontSize: 11))])),
   ]));
 
+  void _showDiagnostics() {
+    showModalBottomSheet<void>(context: context, backgroundColor: const Color(0xFF132125), isScrollControlled: true, builder: (context) => SafeArea(child: SizedBox(height: MediaQuery.of(context).size.height * .72, child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [const Text('LOG DIAGNOSTIK', style: TextStyle(color: blue, letterSpacing: 1.3, fontWeight: FontWeight.w700)), const Spacer(), TextButton(onPressed: () => HaloDiagnostics.clear(), child: const Text('Bersihkan'))]), const SizedBox(height: 8), const Text('Kirim screenshot log ini saat melaporkan bug.', style: TextStyle(color: Colors.white54, fontSize: 12)), const SizedBox(height: 12), Expanded(child: ValueListenableBuilder<List<String>>(valueListenable: HaloDiagnostics.entries, builder: (_, logs, __) => ListView.builder(reverse: true, itemCount: logs.length, itemBuilder: (_, index) => Padding(padding: const EdgeInsets.only(bottom: 7), child: Text(logs[logs.length - 1 - index], style: const TextStyle(fontFamily: 'monospace', fontSize: 10, color: Color(0xFFB9D2D7)))))))]))));
+  }
+
   Widget _homeView() => SingleChildScrollView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text(connection.connected ? 'Sesi Anda siap.' : 'Jadikan HP\nlebih berguna.', style: const TextStyle(fontSize: 36, height: .98, fontWeight: FontWeight.w800, letterSpacing: -1.8)),
+    Text(connection.connected ? 'Siap dipakai.' : 'Pair dengan\nDesktop Hub.', style: const TextStyle(fontSize: 36, height: .98, fontWeight: FontWeight.w800, letterSpacing: -1.8)),
     const SizedBox(height: 13),
-    Text(connection.connected ? 'Pilih mode yang ingin digunakan. Layar akan meminta sumber dari Desktop Hub dan dapat tetap aktif saat Anda berpindah mode.' : 'Hubungkan ke Halo Deck Desktop Hub di jaringan WiFi yang sama—cukup satu scan QR.', style: TextStyle(color: Colors.white.withOpacity(.64), height: 1.5, fontSize: 14)),
+    Text(connection.connected ? 'Pilih mode.' : 'Scan QR di WiFi yang sama.', style: TextStyle(color: Colors.white.withOpacity(.64), height: 1.5, fontSize: 14)),
     const SizedBox(height: 23),
     if (!connection.connected) _pairCard() else _connectedCard(),
     const SizedBox(height: 18),
@@ -334,7 +364,7 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
   Widget _displayView() {
     final active = receiver;
     if (openingDisplay) return const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [CircularProgressIndicator(color: apricot), SizedBox(height: 16), Text('Menyiapkan penerima layar…')]));
-    if (active == null) return Center(child: Padding(padding: const EdgeInsets.all(30), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.monitor_heart_outlined, color: apricot, size: 42), const SizedBox(height: 14), Text(displayError ?? 'Layar belum aktif', textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withOpacity(.72))), const SizedBox(height: 16), FilledButton.icon(onPressed: _openDisplay, icon: const Icon(Icons.play_arrow), label: const Text('Mulai Layar'))])));
+    if (active == null) return Center(child: Padding(padding: const EdgeInsets.all(30), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.monitor_heart_outlined, color: apricot, size: 42), const SizedBox(height: 14), Text(displayError ?? 'Layar belum aktif', textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withOpacity(.72))), const SizedBox(height: 16), PressScale(child: FilledButton.icon(onPressed: _openDisplay, icon: const Icon(Icons.play_arrow), label: const Text('Mulai')))])));
     return Column(children: [
       Expanded(child: Stack(children: [
         Container(color: Colors.black, width: double.infinity, child: Center(child: RTCVideoView(active.renderer, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain))),
@@ -342,22 +372,22 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
           DecoratedBox(decoration: BoxDecoration(color: Colors.black.withOpacity(.68), borderRadius: BorderRadius.circular(20)), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8), child: Text(_receiverLabel(active.state.value), style: const TextStyle(color: blue, fontSize: 10, letterSpacing: 1.1)))),
           const Spacer(),
           IconButton.filledTonal(onPressed: _restartDisplay, icon: const Icon(Icons.refresh, size: 19), tooltip: 'Muat ulang streaming'),
+          const SizedBox(width: 6),
+          IconButton.filledTonal(onPressed: () => _setDisplayFullscreen(!displayFullscreen), icon: Icon(displayFullscreen ? Icons.fullscreen_exit : Icons.fullscreen, size: 19), tooltip: 'Fullscreen'),
         ])),
         if (active.state.value != ReceiverState.streaming) Center(child: DecoratedBox(decoration: BoxDecoration(color: Colors.black.withOpacity(.68), borderRadius: BorderRadius.circular(14)), child: Padding(padding: const EdgeInsets.all(14), child: Text(_receiverHint(active.state.value), textAlign: TextAlign.center)))),
       ])),
-      _displayControls(),
+      if (!displayFullscreen) _displayControls(),
     ]);
   }
 
-  String _receiverLabel(ReceiverState value) => switch (value) { ReceiverState.streaming => 'LAYAR TAMBAHAN · LAN', ReceiverState.error => 'STREAM MEMERLUKAN MUAT ULANG', _ => 'MENUNGGU SUMBER DESKTOP' };
-  String _receiverHint(ReceiverState value) => switch (value) { ReceiverState.error => 'Terjadi gangguan pada penerima. Tekan ikon muat ulang.', ReceiverState.waitingForStream => 'Pilih sumber layar atau jendela pada Desktop Hub.', _ => 'Menghubungkan video lokal…' };
+  String _receiverLabel(ReceiverState value) => switch (value) { ReceiverState.streaming => 'LIVE · LAN', ReceiverState.error => 'COBA ULANG', _ => 'MENUNGGU SUMBER' };
+  String _receiverHint(ReceiverState value) => switch (value) { ReceiverState.error => 'Tekan muat ulang.', ReceiverState.waitingForStream => 'Pilih sumber di Desktop Hub.', _ => 'Menghubungkan…' };
 
   Widget _displayControls() => Container(color: const Color(0xFF101B1F), padding: const EdgeInsets.fromLTRB(16, 12, 16, 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    const Text('KONTROL LAYAR', style: TextStyle(color: blue, fontSize: 10, letterSpacing: 1.4)),
-    const SizedBox(height: 7),
-    Text('Di Desktop Hub, pilih seluruh layar, jendela Spotify, browser lirik, atau aplikasi lain sebelum mengirim sumber.', style: TextStyle(color: Colors.white.withOpacity(.58), fontSize: 11, height: 1.35)),
-    const SizedBox(height: 7),
-    SwitchListTile.adaptive(contentPadding: EdgeInsets.zero, dense: true, title: const Text('Jaga layar HP tetap aktif', style: TextStyle(fontSize: 13)), subtitle: Text('Streaming tetap siaga selama sesi LAN', style: TextStyle(color: Colors.white.withOpacity(.55), fontSize: 11)), value: displayKeepAwake, activeColor: apricot, onChanged: _setDisplayKeepAwake),
+    const Text('LAYAR', style: TextStyle(color: blue, fontSize: 10, letterSpacing: 1.4)),
+    SwitchListTile.adaptive(contentPadding: EdgeInsets.zero, dense: true, title: const Text('Tetap aktif', style: TextStyle(fontSize: 13)), value: displayKeepAwake, activeColor: apricot, onChanged: _setDisplayKeepAwake),
+    SwitchListTile.adaptive(contentPadding: EdgeInsets.zero, dense: true, title: const Text('Fullscreen', style: TextStyle(fontSize: 13)), value: displayFullscreen, activeColor: apricot, onChanged: _setDisplayFullscreen),
     const Text('Rotasi tampilan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
     const SizedBox(height: 6),
     _rotationChoices(displayRotation, _setDisplayRotation),
@@ -420,11 +450,13 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
   Widget _clockView() {
     final palette = _paletteFor(clockTheme);
     return Container(color: palette.background, width: double.infinity, height: double.infinity, child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(22, 18, 22, 24), child: Column(children: [
+      if (clockFullscreen) Align(alignment: Alignment.topRight, child: IconButton(onPressed: () => _setClockFullscreen(false), icon: Icon(Icons.fullscreen_exit, color: palette.foreground), tooltip: 'Keluar fullscreen')),
       const SizedBox(height: 16), Text('AMBIENT CLOCK', style: TextStyle(color: palette.accent, fontSize: 11, letterSpacing: 2.4)), const SizedBox(height: 20), _clockFace(palette), const SizedBox(height: 27),
-      Container(width: double.infinity, padding: const EdgeInsets.all(15), decoration: BoxDecoration(color: palette.foreground.withOpacity(.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: palette.foreground.withOpacity(.13))), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (!clockFullscreen) Container(width: double.infinity, padding: const EdgeInsets.all(15), decoration: BoxDecoration(color: palette.foreground.withOpacity(.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: palette.foreground.withOpacity(.13))), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('TEMA', style: TextStyle(color: palette.accent, fontSize: 10, letterSpacing: 1.3)), const SizedBox(height: 7), _clockThemeChoices(palette), const SizedBox(height: 13),
         Text('LAYOUT', style: TextStyle(color: palette.accent, fontSize: 10, letterSpacing: 1.3)), const SizedBox(height: 7), _clockLayoutChoices(palette), const SizedBox(height: 13),
-        SwitchListTile.adaptive(contentPadding: EdgeInsets.zero, dense: true, title: Text('Jaga layar tetap aktif', style: TextStyle(color: palette.foreground, fontSize: 13)), subtitle: Text('Cocok untuk meja, lirik, atau bedside display', style: TextStyle(color: palette.muted, fontSize: 11)), value: clockKeepAwake, activeColor: palette.accent, onChanged: _setClockKeepAwake),
+        SwitchListTile.adaptive(contentPadding: EdgeInsets.zero, dense: true, title: Text('Tetap aktif', style: TextStyle(color: palette.foreground, fontSize: 13)), value: clockKeepAwake, activeColor: palette.accent, onChanged: _setClockKeepAwake),
+        SwitchListTile.adaptive(contentPadding: EdgeInsets.zero, dense: true, title: Text('Fullscreen', style: TextStyle(color: palette.foreground, fontSize: 13)), value: clockFullscreen, activeColor: palette.accent, onChanged: _setClockFullscreen),
         Text('Rotasi Jam', style: TextStyle(color: palette.foreground, fontSize: 12, fontWeight: FontWeight.w700)), const SizedBox(height: 7), _rotationChoices(clockRotation, _setClockRotation, foreground: palette.foreground, accent: palette.accent),
       ])),
     ])));
@@ -465,4 +497,22 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
     unawaited(connection.dispose());
     super.dispose();
   }
+}
+
+class PressScale extends StatefulWidget {
+  const PressScale({super.key, required this.child});
+  final Widget child;
+  @override
+  State<PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<PressScale> {
+  bool pressed = false;
+  @override
+  Widget build(BuildContext context) => Listener(
+    onPointerDown: (_) => setState(() => pressed = true),
+    onPointerCancel: (_) => setState(() => pressed = false),
+    onPointerUp: (_) => setState(() => pressed = false),
+    child: AnimatedScale(scale: pressed ? .97 : 1, duration: const Duration(milliseconds: 120), child: widget.child),
+  );
 }

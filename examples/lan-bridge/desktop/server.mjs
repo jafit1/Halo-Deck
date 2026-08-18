@@ -4,7 +4,7 @@ import { WebSocketServer } from 'ws';
 import { Bonjour } from 'bonjour-service';
 import { decodeInput, PORT, PROTOCOL_VERSION, SERVICE_TYPE } from './protocol.mjs';
 
-export function startLanServer({ port = PORT, onInput = () => {}, onPeer = () => {}, onSignal = () => {} } = {}) {
+export function startLanServer({ port = PORT, onInput = () => {}, onPeer = () => {}, onSignal = () => {}, onLog = () => {} } = {}) {
   const pairing = createPairing();
   const lanAddress = getLanAddress();
   const wss = new WebSocketServer({ host: '0.0.0.0', port });
@@ -14,7 +14,7 @@ export function startLanServer({ port = PORT, onInput = () => {}, onPeer = () =>
 
   wss.on('connection', (socket) => {
     const peer = { socket, authenticated: false, role: null, deviceId: `session-${crypto.randomBytes(6).toString('hex')}`, deviceName: 'Perangkat baru', platform: 'Mobile', connectedAt: Date.now() };
-    peers.add(peer); notifyPeers();
+    peers.add(peer); onLog('socket.open', { deviceId: peer.deviceId }); notifyPeers();
     socket.send(JSON.stringify({ type: 'pair.challenge', pairId: pairing.id, pinHint: 'Scan the QR or enter the one-time PIN' }));
 
     socket.on('message', (raw, isBinary) => {
@@ -27,10 +27,10 @@ export function startLanServer({ port = PORT, onInput = () => {}, onPeer = () =>
       let message; try { message = JSON.parse(raw.toString()); } catch { return; }
       if (message.type === 'pair.confirm') return authenticatePeer(peer, message, pairing);
       if (!peer.authenticated) return socket.close(1008, 'pairing required');
-      if (message.type === 'webrtc.request' || message.type === 'webrtc.offer' || message.type === 'webrtc.answer' || message.type === 'webrtc.ice' || message.type === 'mode') onSignal({ device: publicPeer(peer), message });
+      if (message.type === 'webrtc.request' || message.type === 'webrtc.offer' || message.type === 'webrtc.answer' || message.type === 'webrtc.ice' || message.type === 'mode') { onLog('signal', { deviceId: peer.deviceId, type: message.type }); onSignal({ device: publicPeer(peer), message }); }
       if (message.type === 'ping') socket.send(JSON.stringify({ type: 'pong', t: message.t }));
     });
-    socket.on('close', () => { peers.delete(peer); notifyPeers(); });
+    socket.on('close', () => { peers.delete(peer); onLog('socket.close', { deviceId: peer.deviceId }); notifyPeers(); });
   });
 
   const close = () => { service.stop(); bonjour.destroy(); wss.close(); for (const peer of peers) peer.socket.close(); };
@@ -44,6 +44,7 @@ export function startLanServer({ port = PORT, onInput = () => {}, onPeer = () =>
     const deviceId = cleanDeviceId(message.deviceId) || peer.deviceId;
     for (const existing of peers) if (existing !== peer && existing.authenticated && existing.deviceId === deviceId) existing.socket.close(1000, 'replaced by reconnect');
     peer.deviceId = deviceId; peer.authenticated = true; peer.role = message.role || 'mobile'; peer.deviceName = cleanLabel(message.deviceName, 'Pocket Hub'); peer.platform = cleanLabel(message.platform, 'Android');
+    onLog('pair.accepted', { deviceId: peer.deviceId, name: peer.deviceName, platform: peer.platform });
     const sessionToken = crypto.randomBytes(32).toString('base64url');
     peer.socket.send(JSON.stringify({ type: 'pair.accepted', token: sealToken(sessionToken, currentPairing.pin, currentPairing.id), protocol: PROTOCOL_VERSION, server: lanAddress, port }));
     notifyPeers();

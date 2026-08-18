@@ -51,3 +51,17 @@
 @media (max-width: 760px) {
   .capture-profiles { grid-template-columns: 1fr; }
 }
+
+.source-dialog { background: transparent; border: 0; color: var(--capture-ink); max-width: 680px; padding: 1rem; width: min(680px, 96vw); }
+.source-dialog::backdrop { background: rgba(1, 8, 10, .78); backdrop-filter: blur(5px); }
+.source-dialog-card { background: #102025; border: 1px solid rgba(155, 193, 201, .36); box-shadow: 0 24px 80px rgba(0, 0, 0, .48); padding: 1.2rem; }
+.source-dialog-head { align-items: start; display: flex; justify-content: space-between; gap: 1rem; }
+.source-dialog-head h3 { font-size: 1.35rem; margin: .35rem 0 0; }
+.source-dialog-card p { color: rgba(238, 240, 232, .62); font-size: .82rem; margin: .55rem 0 1rem; }
+.source-list { display: grid; gap: .55rem; max-height: 52vh; overflow: auto; }
+.source-choice { align-items: center; background: rgba(7, 15, 18, .46); border: 1px solid var(--capture-line); color: var(--capture-ink); cursor: pointer; display: flex; font: inherit; gap: .8rem; padding: .8rem; text-align: left; transition: transform 150ms var(--ease), border-color 150ms var(--ease), background 150ms var(--ease); }
+.source-choice:hover, .source-choice:focus-visible { background: rgba(243, 160, 99, .12); border-color: #f3a063; outline: none; }
+.source-choice:active { transform: scale(.985); }
+.source-choice strong { display: block; font-size: .83rem; }
+.source-choice small { color: rgba(238, 240, 232, .55); display: block; font-size: .69rem; margin-top: .15rem; }
+.source-choice i { color: #f3a063; font-size: 1rem; font-style: normal; }
