@@ -70,6 +70,7 @@
 - [x] Persist the last selected screen or application and offer one-click reuse on the next stream.
 - [x] Add additional Ambient Clock themes and layouts with a fullscreen settings surface.
 - [x] Add selectable LAN stream profiles that balance 1080p detail, frame rate, bitrate, and latency diagnostics.
+- [x] Validate and publish Android and Windows 0.6 installers in GitHub Actions runs 32153160498 and 32153194573.
 - [x] Add structured Desktop Hub and Pocket Hub diagnostic logs for pairing, signaling, capture, and reconnect failures.
 - [ ] Install or locate a Windows JDK so `keytool.exe` can create the Android signing keystore.
 - [ ] Confirm the resolved Windows `keytool` command, then generate the keystore without adding PowerShell prompt characters.
