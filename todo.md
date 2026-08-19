@@ -71,6 +71,10 @@
 - [x] Add additional Ambient Clock themes and layouts with a fullscreen settings surface.
 - [x] Add selectable LAN stream profiles that balance 1080p detail, frame rate, bitrate, and latency diagnostics.
 - [x] Validate and publish Android and Windows 0.6 installers in GitHub Actions runs 32153160498 and 32153194573.
+- [x] Replace the ambiguous mobile mode flow with a Stream Deck-style tile grid for Screen, Spotify Lyrics, Browser Lyrics, Trackpad, and Ambient Clock.
+- [x] Make each tile send a deterministic desktop capture preset and expose a clear ready, choose-source, live, or failed state.
+- [x] Simplify Desktop Hub source setup to one explicit first-run selection followed by reliable preset reuse.
+- [ ] Complete a USB-connected real-phone test for pairing, each deck action, source selection, streaming state, fullscreen clock, and reconnect behavior before publishing.
 - [x] Add structured Desktop Hub and Pocket Hub diagnostic logs for pairing, signaling, capture, and reconnect failures.
 - [ ] Install or locate a Windows JDK so `keytool.exe` can create the Android signing keystore.
 - [ ] Confirm the resolved Windows `keytool` command, then generate the keystore without adding PowerShell prompt characters.

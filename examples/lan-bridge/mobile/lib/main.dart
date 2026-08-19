@@ -17,6 +17,7 @@ const blue = Color(0xFF9BC1C9);
 const apricot = Color(0xFFF3A063);
 
 enum PocketMode { home, display, trackpad, clock }
+enum DeckPreset { screen, spotifyLyrics, browserLyrics }
 enum PresentationRotation { automatic, portrait, landscape }
 enum ClockTheme { midnight, ember, ocean, paper, forest, violet, solar, mono }
 enum ClockLayout { classic, split, minimal, stacked, ring, dateFirst }
@@ -64,6 +65,7 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
   ClockTheme clockTheme = ClockTheme.midnight;
   ClockLayout clockLayout = ClockLayout.classic;
   String? displayError;
+  DeckPreset activePreset = DeckPreset.screen;
 
   @override
   void initState() {
@@ -163,15 +165,18 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
     await _syncPresentation();
   }
 
-  Future<void> _openDisplay() async {
+  Future<void> _openDisplay([DeckPreset preset = DeckPreset.screen]) async {
     if (openingDisplay) return;
     if (receiver != null) {
-      setState(() { mode = PocketMode.display; displayError = null; });
-      await _syncPresentation();
-      return;
+      if (activePreset == preset) {
+        setState(() { mode = PocketMode.display; displayError = null; });
+        await _syncPresentation();
+        return;
+      }
+      await _stopDisplay();
     }
-    setState(() { openingDisplay = true; displayError = null; });
-    final candidate = LanScreenReceiver(connection, onDiagnostic: HaloDiagnostics.write);
+    setState(() { openingDisplay = true; displayError = null; activePreset = preset; });
+    final candidate = LanScreenReceiver(connection, preset: preset.name, onDiagnostic: HaloDiagnostics.write);
     try {
       await candidate.start();
       if (!mounted) {
@@ -194,7 +199,37 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
 
   Future<void> _restartDisplay() async {
     await _stopDisplay();
-    await _openDisplay();
+    await _openDisplay(activePreset);
+  }
+
+  Future<void> _activateDeck(String action) async {
+    if (!connection.connected) return;
+    HaloDiagnostics.write('deck.activate', {'action': action});
+    switch (action) {
+      case 'screen':
+        await _openDisplay(DeckPreset.screen);
+        return;
+      case 'spotifyLyrics':
+        await _openDisplay(DeckPreset.spotifyLyrics);
+        return;
+      case 'browserLyrics':
+        await _openDisplay(DeckPreset.browserLyrics);
+        return;
+      case 'trackpad':
+        setState(() => mode = PocketMode.trackpad);
+        await _syncPresentation();
+        return;
+      case 'clock':
+        setState(() => mode = PocketMode.clock);
+        await _syncPresentation();
+        return;
+    }
+  }
+
+  Future<void> _backToDeck() async {
+    if (!mounted) return;
+    setState(() => mode = PocketMode.home);
+    await _syncPresentation();
   }
 
   Future<void> _stopDisplay() async {
@@ -286,7 +321,6 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
     return Column(children: [
     if (!fullscreen) _topBar(),
     Expanded(child: AnimatedSwitcher(duration: const Duration(milliseconds: 220), child: switch (mode) { PocketMode.home => _homeView(), PocketMode.display => _displayView(), PocketMode.trackpad => _trackpadView(), PocketMode.clock => _clockView() })),
-    if (connection.connected && !fullscreen) _modeBar(),
   ]);
   }
 
@@ -335,14 +369,24 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
     );
   }
 
-  Widget _homeView() => SingleChildScrollView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text(connection.connected ? 'Siap dipakai.' : 'Pair dengan\nDesktop Hub.', style: const TextStyle(fontSize: 36, height: .98, fontWeight: FontWeight.w800, letterSpacing: -1.8)),
-    const SizedBox(height: 13),
-    Text(connection.connected ? 'Pilih mode.' : 'Scan QR di WiFi yang sama.', style: TextStyle(color: Colors.white.withOpacity(.64), height: 1.5, fontSize: 14)),
-    const SizedBox(height: 23),
-    if (!connection.connected) _pairCard() else _connectedCard(),
-    const SizedBox(height: 18),
-    if (services.isNotEmpty) _discoveryList() else if (!connection.connected) _discoveryButton(),
+  Widget _homeView() => connection.connected ? _deckView() : SingleChildScrollView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    const Text('Pair dengan\nDesktop Hub.', style: TextStyle(fontSize: 36, height: .98, fontWeight: FontWeight.w800, letterSpacing: -1.8)),
+    const SizedBox(height: 13), Text('Scan QR di WiFi yang sama.', style: TextStyle(color: Colors.white.withOpacity(.64), height: 1.5, fontSize: 14)), const SizedBox(height: 23),
+    _pairCard(), const SizedBox(height: 18), if (services.isNotEmpty) _discoveryList() else _discoveryButton(),
+  ]));
+
+  Widget _deckView() => SingleChildScrollView(padding: const EdgeInsets.fromLTRB(18, 10, 18, 24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    const Text('CONTROL DECK', style: TextStyle(color: blue, fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w700)),
+    const SizedBox(height: 7), const Text('Pilih satu aksi.', style: TextStyle(fontSize: 30, height: 1, letterSpacing: -1.2, fontWeight: FontWeight.w800)),
+    const SizedBox(height: 8), Text('Pilih sumber sekali di Desktop Hub. Berikutnya otomatis.', style: TextStyle(color: Colors.white.withOpacity(.58), fontSize: 12)), const SizedBox(height: 20),
+    GridView.count(crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 1.18, physics: const NeverScrollableScrollPhysics(), shrinkWrap: true, children: [
+      DeckTile(icon: Icons.desktop_windows_outlined, title: 'LAYAR', detail: 'Desktop', tone: blue, onTap: () => _activateDeck('screen')),
+      DeckTile(icon: Icons.lyrics_outlined, title: 'SPOTIFY', detail: 'Lirik', tone: apricot, onTap: () => _activateDeck('spotifyLyrics')),
+      DeckTile(icon: Icons.web_outlined, title: 'BROWSER', detail: 'Lirik', tone: const Color(0xFF96D4A5), onTap: () => _activateDeck('browserLyrics')),
+      DeckTile(icon: Icons.touch_app_outlined, title: 'TRACKPAD', detail: 'Pointer', tone: const Color(0xFFCEB2FF), onTap: () => _activateDeck('trackpad')),
+      DeckTile(icon: Icons.schedule_outlined, title: 'JAM', detail: 'Ambient', tone: const Color(0xFFFFD176), onTap: () => _activateDeck('clock')),
+      DeckTile(icon: Icons.link_off_outlined, title: 'PUTUS', detail: 'Sesi', tone: Colors.white70, onTap: _disconnect),
+    ]), const SizedBox(height: 18), Text('Status: $connectionStatus', style: TextStyle(color: Colors.white.withOpacity(.54), fontSize: 11)),
   ]));
 
   Widget _pairCard() => Container(width: double.infinity, padding: const EdgeInsets.all(19), decoration: BoxDecoration(color: const Color(0xFF1D3036), borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFF3E5D64))), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -401,6 +445,8 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
       Expanded(child: Stack(children: [
         Container(color: Colors.black, width: double.infinity, child: Center(child: RTCVideoView(active.renderer, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain))),
         Positioned(top: 16, left: 16, right: 16, child: Row(children: [
+          IconButton.filledTonal(onPressed: _backToDeck, icon: const Icon(Icons.grid_view_rounded, size: 19), tooltip: 'Control Deck'),
+          const SizedBox(width: 6),
           DecoratedBox(decoration: BoxDecoration(color: Colors.black.withOpacity(.68), borderRadius: BorderRadius.circular(20)), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8), child: Text(_receiverLabel(active.state.value), style: const TextStyle(color: blue, fontSize: 10, letterSpacing: 1.1)))),
           const Spacer(),
           IconButton.filledTonal(onPressed: _restartDisplay, icon: const Icon(Icons.refresh, size: 19), tooltip: 'Muat ulang streaming'),
@@ -428,7 +474,7 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
   Widget _trackpadView() => Padding(
     padding: const EdgeInsets.all(20),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('Trackpad', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 32, letterSpacing: -1)),
+      Row(children: [IconButton(onPressed: _backToDeck, icon: const Icon(Icons.grid_view_rounded)), const SizedBox(width: 6), const Text('Trackpad', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 32, letterSpacing: -1))]),
       const SizedBox(height: 7),
       Text(gestureStatus, style: TextStyle(color: Colors.white.withOpacity(.62))),
       const SizedBox(height: 20),
@@ -482,6 +528,7 @@ class _HaloDeckAppState extends State<HaloDeckApp> {
   Widget _clockView() {
     final palette = _paletteFor(clockTheme);
     return Container(color: palette.background, width: double.infinity, height: double.infinity, child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(22, 18, 22, 24), child: Column(children: [
+      Align(alignment: Alignment.topLeft, child: IconButton(onPressed: _backToDeck, icon: Icon(Icons.grid_view_rounded, color: palette.foreground), tooltip: 'Control Deck')),
       if (clockFullscreen) Align(alignment: Alignment.topRight, child: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(onPressed: _showClockSettings, icon: Icon(Icons.tune, color: palette.foreground), tooltip: 'Atur Jam'), IconButton(onPressed: () => _setClockFullscreen(false), icon: Icon(Icons.fullscreen_exit, color: palette.foreground), tooltip: 'Keluar fullscreen')])),
       const SizedBox(height: 16), Text('AMBIENT CLOCK', style: TextStyle(color: palette.accent, fontSize: 11, letterSpacing: 2.4)), const SizedBox(height: 20), _clockFace(palette), const SizedBox(height: 27),
       if (!clockFullscreen) Container(width: double.infinity, padding: const EdgeInsets.all(15), decoration: BoxDecoration(color: palette.foreground.withOpacity(.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: palette.foreground.withOpacity(.13))), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -572,4 +619,31 @@ class _PressScaleState extends State<PressScale> {
     onPointerUp: (_) => setState(() => pressed = false),
     child: AnimatedScale(scale: pressed ? .97 : 1, duration: const Duration(milliseconds: 120), child: widget.child),
   );
+}
+
+class DeckTile extends StatelessWidget {
+  const DeckTile({super.key, required this.icon, required this.title, required this.detail, required this.tone, required this.onTap});
+  final IconData icon;
+  final String title;
+  final String detail;
+  final Color tone;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => PressScale(child: Material(
+    color: const Color(0xFF17282D),
+    borderRadius: BorderRadius.circular(18),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      splashColor: tone.withOpacity(.18),
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), border: Border.all(color: tone.withOpacity(.42))),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(icon, color: tone, size: 27), const Spacer(), Text(title, style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: .8, fontSize: 13)), const SizedBox(height: 3), Text(detail, style: TextStyle(color: Colors.white.withOpacity(.55), fontSize: 11)),
+        ]),
+      ),
+    ),
+  ));
 }

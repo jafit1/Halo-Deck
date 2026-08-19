@@ -7,9 +7,10 @@ import 'connection.dart';
 enum ReceiverState { initializing, waitingForStream, streaming, error, disposed }
 
 class LanScreenReceiver {
-  LanScreenReceiver(this.connection, {this.onDiagnostic});
+  LanScreenReceiver(this.connection, {this.preset = 'screen', this.onDiagnostic});
 
   final LanConnection connection;
+  final String preset;
   final Future<void> Function(String event, Map<String, dynamic> details)? onDiagnostic;
   final renderer = RTCVideoRenderer();
   final ValueNotifier<ReceiverState> state = ValueNotifier(ReceiverState.initializing);
@@ -71,8 +72,8 @@ class LanScreenReceiver {
   void _requestStream() {
     if (!_disposed && connection.connected) {
       state.value = ReceiverState.waitingForStream;
-      _log('screen.request');
-      connection.sendSignal({'type': 'webrtc.request'});
+      _log('screen.request', {'preset': preset});
+      connection.sendSignal({'type': 'webrtc.request', 'preset': preset});
     }
   }
 
